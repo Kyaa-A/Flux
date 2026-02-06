@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import Image from "next/image";
 import {
   LayoutDashboard,
   Receipt,
@@ -14,7 +15,6 @@ import {
   Repeat,
   Settings,
   LogOut,
-  TrendingUp,
   Menu,
   X,
   ChevronDown,
@@ -58,9 +58,7 @@ function Sidebar({ className }: { className?: string }) {
     <div className={cn("flex flex-col h-full", className)}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 h-16 border-b border-border">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center">
-          <TrendingUp className="w-6 h-6 text-white dark:text-zinc-900" />
-        </div>
+        <Image src="/flux.png" alt="Flux" width={36} height={36} className="rounded-lg" />
         <span className="text-xl font-bold text-foreground tracking-tight">Flux</span>
       </div>
 

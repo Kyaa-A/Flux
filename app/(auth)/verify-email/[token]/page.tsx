@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, TrendingUp, CheckCircle2, XCircle } from "lucide-react";
+import Image from "next/image";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -57,9 +58,7 @@ export default function VerifyEmailPage() {
 
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 text-white">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <TrendingUp className="w-7 h-7 text-zinc-900" />
-            </div>
+            <Image src="/flux.png" alt="Flux" width={48} height={48} className="rounded-xl shadow-lg shadow-emerald-500/20" />
             <span className="text-3xl font-bold tracking-tight">Flux</span>
           </div>
 
@@ -81,9 +80,7 @@ export default function VerifyEmailPage() {
         <Card className="w-full max-w-md border-border bg-card/50 backdrop-blur-sm shadow-xl">
           <CardHeader className="space-y-1 text-center">
             <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center shadow-lg">
-                <TrendingUp className="w-6 h-6 text-zinc-900" />
-              </div>
+              <Image src="/flux.png" alt="Flux" width={40} height={40} className="rounded-xl" />
               <span className="text-2xl font-bold">Flux</span>
             </div>
             <CardTitle className="text-2xl font-bold">

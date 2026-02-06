@@ -12,6 +12,10 @@ export const metadata: Metadata = {
   title: "Flux - Personal Finance Tracker",
   description: "Track your income, expenses, and grow your wealth with Flux",
   keywords: ["finance", "budget", "expense tracker", "income tracker", "personal finance"],
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
 };
 
 import { auth } from "@/lib/auth";
