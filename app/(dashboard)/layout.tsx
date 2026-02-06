@@ -57,7 +57,7 @@ function Sidebar({ className }: { className?: string }) {
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-border">
+      <div className="flex items-center gap-3 px-6 h-16 border-b border-border">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center">
           <TrendingUp className="w-6 h-6 text-white dark:text-zinc-900" />
         </div>

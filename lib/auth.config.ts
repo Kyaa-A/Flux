@@ -33,7 +33,7 @@ export const authConfig = {
       const isLoggedIn = !!auth?.user;
       const pathname = nextUrl.pathname;
 
-      const publicRoutes = ["/login", "/register"];
+      const publicRoutes = ["/login", "/register", "/forgot-password"];
       const adminRoutes = ["/admin"];
 
       // Allow API auth routes
@@ -41,6 +41,14 @@ export const authConfig = {
 
       // Allow cron API routes
       if (pathname.startsWith("/api/cron")) return true;
+
+      // Allow reset-password and verify-email routes (dynamic)
+      if (
+        pathname.startsWith("/reset-password/") ||
+        pathname.startsWith("/verify-email/")
+      ) {
+        return true;
+      }
 
       // Redirect authenticated users away from auth pages
       if (isLoggedIn && publicRoutes.includes(pathname)) {
