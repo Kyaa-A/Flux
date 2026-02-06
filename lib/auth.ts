@@ -3,6 +3,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/db";
+import { authConfig } from "@/lib/auth.config";
 import type { Role } from "@/app/generated/prisma/client";
 
 // Extend the default session types
@@ -26,16 +27,12 @@ declare module "next-auth" {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
   },
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
   providers: [
-    // Email/Password authentication
     Credentials({
       name: "credentials",
       credentials: {
@@ -55,12 +52,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error("Invalid credentials");
         }
 
-        // Check if user is banned
         if (user.isBanned) {
           throw new Error("Your account has been suspended");
         }
 
-        // Check if user is active
         if (!user.isActive) {
           throw new Error("Your account is inactive");
         }
@@ -85,17 +80,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         };
       },
     }),
-    // OAuth providers (uncomment when configured)
-    // Google({
-    //   clientId: process.env.GOOGLE_CLIENT_ID,
-    //   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    // }),
-    // GitHub({
-    //   clientId: process.env.GITHUB_CLIENT_ID,
-    //   clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    // }),
   ],
   callbacks: {
+    ...authConfig.callbacks,
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
@@ -117,15 +104,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
       }
       return token;
-    },
-    async session({ session, token }) {
-      if (session.user && token.id) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as Role;
-        session.user.currency = (token.currency as string) || "USD";
-        session.user.locale = (token.locale as string) || "en-US";
-      }
-      return session;
     },
   },
 });

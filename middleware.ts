@@ -1,39 +1,11 @@
-import { auth } from "@/lib/auth";
-import { NextResponse } from "next/server";
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth.config";
 
-const publicRoutes = ["/login", "/register"];
-const adminRoutes = ["/admin"];
+// Use the lightweight auth config that doesn't import Prisma
+// This ensures the middleware runs in Edge Runtime without Node.js built-ins
+export const { auth: middleware } = NextAuth(authConfig);
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl;
-  const isLoggedIn = !!req.auth;
-  const userRole = req.auth?.user?.role;
-
-  // Allow API auth routes
-  if (pathname.startsWith("/api/auth")) {
-    return NextResponse.next();
-  }
-
-  // Redirect authenticated users away from auth pages
-  if (isLoggedIn && publicRoutes.includes(pathname)) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-
-  // Redirect unauthenticated users to login
-  if (!isLoggedIn && !publicRoutes.includes(pathname) && pathname !== "/") {
-    const callbackUrl = encodeURIComponent(pathname);
-    return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url));
-  }
-
-  // Redirect non-admin users from admin routes
-  if (isLoggedIn && adminRoutes.some((route) => pathname.startsWith(route))) {
-    if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-  }
-
-  return NextResponse.next();
-});
+export default middleware;
 
 export const config = {
   matcher: [
