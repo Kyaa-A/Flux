@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { createNotification } from "@/lib/actions/notifications";
 
 // Role types
 export type Role = "USER" | "ADMIN" | "SUPER_ADMIN";
@@ -144,6 +145,13 @@ export async function updateUserRole(userId: string, newRole: Role) {
     data: { role: newRole },
   });
 
+  await createNotification({
+    userId,
+    title: "Role updated",
+    message: `Your role has been changed to ${newRole.replace("_", " ")}.`,
+    type: "INFO",
+  });
+
   return { success: true };
 }
 
@@ -168,8 +176,10 @@ export async function banUser(userId: string, reason: string) {
     return { error: "User not found" };
   }
 
-  // Cannot ban someone with equal or higher role
-  if (!(await hasRole(currentUser.role as Role, targetUser.role as Role))) {
+  // Cannot ban someone with equal or higher role (must be strictly higher)
+  const currentRoleIndex = ROLE_HIERARCHY.indexOf(currentUser.role as Role);
+  const targetRoleIndex = ROLE_HIERARCHY.indexOf(targetUser.role as Role);
+  if (currentRoleIndex <= targetRoleIndex) {
     return { error: "Cannot ban user with equal or higher role" };
   }
 
@@ -180,6 +190,14 @@ export async function banUser(userId: string, reason: string) {
       bannedAt: new Date(),
       bannedReason: reason,
     },
+  });
+
+  // Notify the banned user
+  await createNotification({
+    userId,
+    title: "Account suspended",
+    message: reason ? `Reason: ${reason}` : "Your account has been suspended by an administrator.",
+    type: "ERROR",
   });
 
   return { success: true };
@@ -200,6 +218,13 @@ export async function unbanUser(userId: string) {
     },
   });
 
+  await createNotification({
+    userId,
+    title: "Account restored",
+    message: "Your account suspension has been lifted.",
+    type: "SUCCESS",
+  });
+
   return { success: true };
 }
 
@@ -216,16 +241,34 @@ export async function toggleUserActive(userId: string) {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { isActive: true },
+    select: { isActive: true, role: true },
   });
 
   if (!user) {
     return { error: "User not found" };
   }
 
+  // Cannot deactivate someone with equal or higher role
+  const currentRoleIndex = ROLE_HIERARCHY.indexOf(currentUser.role as Role);
+  const targetRoleIndex = ROLE_HIERARCHY.indexOf(user.role as Role);
+  if (currentRoleIndex <= targetRoleIndex) {
+    return { error: "Cannot modify user with equal or higher role" };
+  }
+
+  const newActive = !user.isActive;
+
   await prisma.user.update({
     where: { id: userId },
-    data: { isActive: !user.isActive },
+    data: { isActive: newActive },
+  });
+
+  await createNotification({
+    userId,
+    title: newActive ? "Account activated" : "Account deactivated",
+    message: newActive
+      ? "Your account has been activated by an administrator."
+      : "Your account has been deactivated by an administrator.",
+    type: newActive ? "SUCCESS" : "WARNING",
   });
 
   return { success: true };
