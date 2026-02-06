@@ -94,7 +94,7 @@ export default function ResetPasswordPage() {
 
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 text-white">
           <div className="flex items-center gap-3 mb-8">
-            <Image src="/flux.png" alt="Flux" width={48} height={48} className="rounded-xl shadow-lg shadow-emerald-500/20" />
+            <Image src="/flux.png" alt="Flux" width={48} height={48} className="shadow-lg shadow-emerald-500/20" />
             <span className="text-3xl font-bold tracking-tight">Flux</span>
           </div>
 
@@ -116,7 +116,7 @@ export default function ResetPasswordPage() {
         <Card className="w-full max-w-md border-border bg-card/50 backdrop-blur-sm shadow-xl">
           <CardHeader className="space-y-1 text-center">
             <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
-              <Image src="/flux.png" alt="Flux" width={40} height={40} className="rounded-xl" />
+              <Image src="/flux.png" alt="Flux" width={40} height={40} className="" />
               <span className="text-2xl font-bold">Flux</span>
             </div>
             <CardTitle className="text-2xl font-bold">

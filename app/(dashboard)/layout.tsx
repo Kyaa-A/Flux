@@ -58,7 +58,7 @@ function Sidebar({ className }: { className?: string }) {
     <div className={cn("flex flex-col h-full", className)}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 h-16 border-b border-border">
-        <Image src="/flux.png" alt="Flux" width={36} height={36} className="rounded-lg" />
+        <Image src="/flux.png" alt="Flux" width={36} height={36} />
         <span className="text-xl font-bold text-foreground tracking-tight">Flux</span>
       </div>
 
