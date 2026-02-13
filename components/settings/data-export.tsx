@@ -96,101 +96,87 @@ export function DataExport() {
   const handleExportPdf = async () => {
     setIsLoadingPdf(true);
     try {
+      const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
       const data = await exportUserData();
       const tx = data.transactions.slice(0, 500);
-      const rows = tx
-        .map(
-          (t) => `
-            <tr>
-              <td>${new Date(t.date).toLocaleDateString()}</td>
-              <td>${t.type}</td>
-              <td>${Number(t.amount).toFixed(2)}</td>
-              <td>${t.category}</td>
-              <td>${t.wallet}</td>
-              <td>${t.description || ""}</td>
-            </tr>
-          `
-        )
-        .join("");
-      const logoUrl = `${window.location.origin}/flux.png`;
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
 
-      const html = `
-        <html>
-          <head>
-            <title>Flux Report</title>
-            <style>
-              @page { size: A4; margin: 18mm; }
-              body { font-family: "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; }
-              .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 16px; }
-              .brand { display: flex; align-items: center; gap: 10px; }
-              .brand img { width: 30px; height: 30px; object-fit: contain; }
-              .brand h1 { font-size: 20px; margin: 0; letter-spacing: 0.2px; }
-              .meta { text-align: right; font-size: 12px; color: #475569; line-height: 1.5; }
-              .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
-              .summary .item { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; background: #f8fafc; }
-              .summary .label { font-size: 11px; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
-              .summary .value { font-size: 14px; font-weight: 600; color: #0f172a; }
-              table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-              th, td { border: 1px solid #e2e8f0; padding: 8px; font-size: 11px; text-align: left; vertical-align: top; }
-              th { background: #f1f5f9; color: #0f172a; font-weight: 700; }
-              tbody tr:nth-child(even) { background: #fcfdff; }
-              td:nth-child(3), th:nth-child(3) { text-align: right; width: 90px; }
-              .footer { margin-top: 12px; font-size: 10px; color: #64748b; text-align: right; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <div class="brand">
-                <img src="${logoUrl}" alt="Flux" />
-                <h1>Flux Financial Report</h1>
-              </div>
-              <div class="meta">
-                <div>Generated: ${new Date().toLocaleString()}</div>
-                <div>User: ${data.user?.email || "Unknown"}</div>
-              </div>
-            </div>
-            <div class="summary">
-              <div class="item">
-                <div class="label">Transactions</div>
-                <div class="value">${tx.length}</div>
-              </div>
-              <div class="item">
-                <div class="label">Wallets</div>
-                <div class="value">${data.wallets.length}</div>
-              </div>
-              <div class="item">
-                <div class="label">Categories</div>
-                <div class="value">${data.categories.length}</div>
-              </div>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Amount</th>
-                  <th>Category</th>
-                  <th>Wallet</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>${rows}</tbody>
-            </table>
-            <div class="footer">Flux • Personal Finance Tracker</div>
-          </body>
-        </html>
-      `;
+      doc.setFillColor(16, 185, 129);
+      doc.rect(0, 0, pageWidth, 86, "F");
 
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        toast.error("Popup blocked. Please allow popups to export PDF.");
-        return;
+      try {
+        const logoBlob = await fetch(`${window.location.origin}/flux.png`).then((r) => r.blob());
+        const logoDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(logoBlob);
+        });
+        doc.addImage(logoDataUrl, "PNG", 36, 24, 28, 28);
+      } catch {
+        // Logo is optional during export; continue if unavailable.
       }
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-      toast.success("Print dialog opened. Choose Save as PDF.");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text("Flux Financial Report", 74, 44);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - 36, 36, { align: "right" });
+      doc.text(`User: ${data.user?.email || "Unknown"}`, pageWidth - 36, 52, { align: "right" });
+
+      const cardY = 102;
+      const cardW = (pageWidth - 36 * 2 - 16 * 2) / 3;
+      const cards = [
+        { label: "Transactions", value: String(tx.length) },
+        { label: "Wallets", value: String(data.wallets.length) },
+        { label: "Categories", value: String(data.categories.length) },
+      ];
+
+      cards.forEach((card, i) => {
+        const x = 36 + i * (cardW + 16);
+        doc.setDrawColor(203, 213, 225);
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(x, cardY, cardW, 52, 8, 8, "FD");
+        doc.setTextColor(100, 116, 139);
+        doc.setFontSize(9);
+        doc.text(card.label.toUpperCase(), x + 10, cardY + 18);
+        doc.setTextColor(15, 23, 42);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text(card.value, x + 10, cardY + 38);
+      });
+
+      autoTable(doc, {
+        startY: 172,
+        head: [["Date", "Type", "Amount", "Category", "Wallet", "Description"]],
+        body: tx.map((t) => [
+          new Date(t.date).toLocaleDateString(),
+          t.type,
+          Number(t.amount).toFixed(2),
+          t.category,
+          t.wallet,
+          t.description || "",
+        ]),
+        theme: "grid",
+        headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 9 },
+        styles: { fontSize: 8.5, cellPadding: 5, lineColor: [226, 232, 240] },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          2: { halign: "right", cellWidth: 64 },
+          0: { cellWidth: 66 },
+          1: { cellWidth: 58 },
+        },
+        margin: { left: 36, right: 36 },
+      });
+
+      doc.save(`flux-report-${new Date().toISOString().split("T")[0]}.pdf`);
+      toast.success("PDF exported");
     } catch {
       toast.error("Failed to export PDF");
     } finally {

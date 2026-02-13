@@ -44,9 +44,12 @@ export const walletSchema = z.object({
     "OTHER",
   ]),
   balance: z.number().default(0),
-  currency: z.string().min(3).max(3),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format"),
-  icon: z.string().min(1, "Icon is required"),
+  currency: z.string().length(3).default("USD"),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format")
+    .default("#22c55e"),
+  icon: z.string().min(1, "Icon is required").default("wallet"),
 });
 
 export type WalletFormData = z.infer<typeof walletSchema>;
