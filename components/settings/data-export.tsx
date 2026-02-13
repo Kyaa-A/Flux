@@ -5,7 +5,7 @@ import { exportUserData, exportTransactionsCSV } from "@/lib/actions/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Download, Loader2, FileJson, FileSpreadsheet } from "lucide-react";
+import { Download, Loader2, FileJson, FileSpreadsheet, FileText } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -245,7 +245,7 @@ export function DataExport() {
           </div>
         )}
       </div>
-      <Button onClick={handleExportCsv} disabled={isLoadingCsv} variant="outline">
+      <Button onClick={handleExportCsv} disabled={isLoadingCsv} variant="outline" className="w-full sm:w-auto">
         {isLoadingCsv ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
@@ -254,7 +254,19 @@ export function DataExport() {
         Export CSV
       </Button>
 
-      <Button onClick={handleExportPdf} disabled={isLoadingPdf} variant="outline">
+      <div className="border-t pt-6" />
+
+      <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50">
+        <FileText className="h-8 w-8 text-muted-foreground shrink-0" />
+        <div className="space-y-1">
+          <p className="font-medium">Export Professional Report (PDF)</p>
+          <p className="text-sm text-muted-foreground">
+            Download a branded PDF report with a styled header, logo, summary cards,
+            and detailed transaction table.
+          </p>
+        </div>
+      </div>
+      <Button onClick={handleExportPdf} disabled={isLoadingPdf} variant="outline" className="w-full sm:w-auto">
         {isLoadingPdf ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
