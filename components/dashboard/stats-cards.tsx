@@ -76,7 +76,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => (
         <Link key={card.title} href={card.href}>
-          <Card className="border-border hover:border-border/80 transition-colors overflow-hidden group cursor-pointer h-full">
+          <Card className="relative border-border hover:border-border/80 transition-colors overflow-hidden group cursor-pointer h-full">
             <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity bg-gradient-to-br ${card.gradient}`} />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
