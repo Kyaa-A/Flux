@@ -5,6 +5,11 @@ import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import type { RecurringFrequency } from "@/app/generated/prisma/client";
 import { recurringTransactionSchema } from "@/lib/validations";
+import { calculateNextRunDate } from "@/lib/recurring-processor";
+import {
+  createBudgetAlertNotificationsForUser,
+  createNotification,
+} from "@/lib/notifications";
 
 async function getAuthUserId() {
   const session = await auth();
@@ -66,8 +71,67 @@ export async function createRecurringTransaction(data: {
     },
   });
 
+  const now = new Date();
+  const shouldRunNow =
+    recurring.isActive &&
+    recurring.nextRunDate <= now &&
+    (!recurring.endDate || recurring.endDate >= now);
+
+  if (shouldRunNow) {
+    const balanceChange =
+      recurring.type === "INCOME"
+        ? Number(recurring.amount)
+        : -Number(recurring.amount);
+    const nextDate = calculateNextRunDate(recurring.nextRunDate, recurring.frequency);
+    const shouldDeactivate = recurring.endDate ? nextDate > recurring.endDate : false;
+
+    await prisma.$transaction([
+      prisma.transaction.create({
+        data: {
+          amount: recurring.amount,
+          type: recurring.type,
+          description: recurring.description,
+          date: now,
+          isRecurring: true,
+          recurringId: recurring.id,
+          userId: recurring.userId,
+          walletId: recurring.walletId,
+          categoryId: recurring.categoryId,
+        },
+      }),
+      prisma.wallet.update({
+        where: { id: recurring.walletId, userId },
+        data: { balance: { increment: balanceChange } },
+      }),
+      prisma.recurringTransaction.update({
+        where: { id: recurring.id, userId },
+        data: {
+          nextRunDate: nextDate,
+          lastRunAt: now,
+          isActive: !shouldDeactivate,
+        },
+      }),
+    ]);
+
+    const sign = recurring.type === "INCOME" ? "+" : "-";
+    await createNotification({
+      userId,
+      title: `${recurring.description || "Recurring transaction"} processed`,
+      message: `${sign}$${Number(recurring.amount).toFixed(2)} was automatically recorded.`,
+      type: "SUCCESS",
+      actionUrl: "/transactions",
+      preferenceKey: "recurringProcessed",
+    });
+
+    if (recurring.type === "EXPENSE") {
+      await createBudgetAlertNotificationsForUser(userId);
+    }
+  }
+
   revalidatePath("/transactions");
   revalidatePath("/transactions/recurring");
+  revalidatePath("/dashboard");
+  revalidatePath("/wallets");
 
   return { success: true, recurring };
 }

@@ -172,7 +172,7 @@ export default async function WalletsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {wallets.length >= 2 && (
+          {wallets.length >= 2 ? (
             <TransferDialog
               wallets={wallets}
               trigger={
@@ -182,6 +182,11 @@ export default async function WalletsPage() {
                 </Button>
               }
             />
+          ) : (
+            <Button variant="outline" disabled title="Create at least two wallets to transfer money">
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              Transfer
+            </Button>
           )}
           <WalletDialog
             trigger={
@@ -201,7 +206,14 @@ export default async function WalletsPage() {
 
       {/* Wallet Grid */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Your Wallets</h2>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Your Wallets</h2>
+          {wallets.length < 2 && (
+            <p className="text-xs text-muted-foreground">
+              Add one more wallet to enable transfers
+            </p>
+          )}
+        </div>
         <Suspense fallback={<WalletGridSkeleton />}>
           <WalletGrid />
         </Suspense>

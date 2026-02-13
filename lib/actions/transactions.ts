@@ -4,7 +4,10 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { transactionSchema } from "@/lib/validations";
-import { maybeCreateLargeTransactionNotification } from "@/lib/notifications";
+import {
+  createBudgetAlertNotificationsForUser,
+  maybeCreateLargeTransactionNotification,
+} from "@/lib/notifications";
 
 /**
  * Get all transactions for the current user with filters
@@ -135,6 +138,7 @@ export async function createTransaction(data: {
       type: transaction.type,
       description: transaction.description,
     });
+    await createBudgetAlertNotificationsForUser(session.user.id);
   }
 
   return { ...transaction, amount: Number(transaction.amount) };
@@ -221,6 +225,7 @@ export async function updateTransaction(
       type: transaction.type,
       description: transaction.description,
     });
+    await createBudgetAlertNotificationsForUser(session.user.id);
   }
 
   return { ...transaction, amount: Number(transaction.amount) };
@@ -291,6 +296,8 @@ export async function deleteTransaction(id: string) {
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
+
+  await createBudgetAlertNotificationsForUser(session.user.id);
 
   return { success: true };
 }

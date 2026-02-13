@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import type { RecurringFrequency } from "@/app/generated/prisma/client";
 import { createNotification } from "@/lib/notifications";
 
-function getNextRunDate(current: Date, frequency: RecurringFrequency): Date {
+export function calculateNextRunDate(current: Date, frequency: RecurringFrequency): Date {
   const next = new Date(current);
   switch (frequency) {
     case "DAILY":
@@ -43,6 +43,7 @@ export async function processRecurringTransactions() {
   });
 
   let processed = 0;
+  const affectedUserIds = new Set<string>();
 
   for (const recurring of dueRecurring) {
     const balanceChange =
@@ -51,7 +52,7 @@ export async function processRecurringTransactions() {
         : -Number(recurring.amount);
 
     // Advance next run date
-    const nextDate = getNextRunDate(recurring.nextRunDate, recurring.frequency);
+    const nextDate = calculateNextRunDate(recurring.nextRunDate, recurring.frequency);
     const shouldDeactivate =
       recurring.endDate && nextDate > recurring.endDate;
 
@@ -96,7 +97,15 @@ export async function processRecurringTransactions() {
       preferenceKey: "recurringProcessed",
     });
 
+    affectedUserIds.add(recurring.userId);
     processed++;
+  }
+
+  if (affectedUserIds.size > 0) {
+    const { createBudgetAlertNotificationsForUser } = await import("@/lib/notifications");
+    await Promise.all(
+      [...affectedUserIds].map((userId) => createBudgetAlertNotificationsForUser(userId))
+    );
   }
 
   return { processed };

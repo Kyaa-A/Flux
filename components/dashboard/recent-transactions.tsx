@@ -7,7 +7,7 @@ import {
   MoreHorizontal,
   ExternalLink,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getRelativeTime } from "@/lib/utils";
@@ -64,26 +64,28 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle className="text-lg">Recent Transactions</CardTitle>
-        <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
-          <Link href="/transactions">
-            View all
-            <ExternalLink className="w-4 h-4 ml-1" />
-          </Link>
-        </Button>
+        <CardAction>
+          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+            <Link href="/transactions">
+              View all
+              <ExternalLink className="w-4 h-4 ml-1" />
+            </Link>
+          </Button>
+        </CardAction>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 sm:px-6">
         <div className="space-y-1">
           {transactions.map((transaction) => (
             <div
               key={transaction.id}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors group"
+              className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg hover:bg-muted/50 transition-colors group"
             >
               <div className="flex items-center gap-3">
                 {/* Icon */}
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: `${transaction.category.color}20` }}
                 >
                   {transaction.type === "INCOME" ? (

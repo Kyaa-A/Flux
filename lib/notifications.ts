@@ -26,6 +26,16 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   largeTransactionThreshold: null,
 };
 
+type BudgetLite = {
+  id: string;
+  name: string;
+  amount: unknown;
+  period: string;
+  startDate: Date;
+  categoryIds: string[];
+  userId: string;
+};
+
 function normalizeNotificationPreferences(
   raw: unknown
 ): NotificationPreferences {
@@ -179,19 +189,28 @@ function getPeriodRange(now: Date, period: string, startDate: Date) {
  * Create budget alert notifications for all users with budgets > threshold
  */
 export async function createBudgetAlertNotifications() {
-  const budgets = await prisma.budget.findMany({
-    where: { isActive: true },
-    include: { user: { select: { id: true } } },
+  const users = await prisma.user.findMany({
+    select: { id: true },
   });
 
-  const now = new Date();
+  let created = 0;
+  for (const user of users) {
+    const result = await createBudgetAlertNotificationsForUser(user.id);
+    created += result.created;
+  }
+
+  return { created };
+}
+
+async function createBudgetAlertsForBudgets(
+  budgets: BudgetLite[],
+  now: Date
+) {
   let created = 0;
 
   for (const budget of budgets) {
-    // Calculate period range
     const { start, end } = getPeriodRange(now, budget.period, budget.startDate);
 
-    // Calculate spending for this budget's categories in the period
     const spending = await prisma.transaction.aggregate({
       where: {
         userId: budget.userId,
@@ -207,7 +226,6 @@ export async function createBudgetAlertNotifications() {
     const percentage = budgetAmount > 0 ? (spent / budgetAmount) * 100 : 0;
 
     if (percentage >= 100) {
-      // Check if we already sent an exceeded notification recently (last 24h)
       const existing = await prisma.notification.findFirst({
         where: {
           userId: budget.userId,
@@ -253,4 +271,25 @@ export async function createBudgetAlertNotifications() {
   }
 
   return { created };
+}
+
+export async function createBudgetAlertNotificationsForUser(userId: string) {
+  const budgets = await prisma.budget.findMany({
+    where: { userId, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      amount: true,
+      period: true,
+      startDate: true,
+      categoryIds: true,
+      userId: true,
+    },
+  });
+
+  if (budgets.length === 0) {
+    return { created: 0 };
+  }
+
+  return createBudgetAlertsForBudgets(budgets, new Date());
 }

@@ -70,17 +70,29 @@ async function ChartsSection() {
       <div className="lg:col-span-2">
         <MonthlyChart data={monthlyData} />
       </div>
-      <div className="space-y-6">
+      <div>
         <ExpenseDonut data={expenseData} />
-        <TopCategories data={expenseData} />
       </div>
     </div>
   );
 }
 
-async function TransactionsSection() {
-  const transactions = await getRecentTransactions(8);
-  return <RecentTransactions transactions={transactions} />;
+async function TransactionsAndTopSpendingSection() {
+  const [transactions, expenseData] = await Promise.all([
+    getRecentTransactions(8),
+    getExpenseByCategory(),
+  ]);
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="xl:col-span-2">
+        <RecentTransactions transactions={transactions} />
+      </div>
+      <div>
+        <TopCategories data={expenseData} />
+      </div>
+    </div>
+  );
 }
 
 export default async function DashboardPage() {
@@ -90,7 +102,7 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -127,8 +139,17 @@ export default async function DashboardPage() {
       </Suspense>
 
       {/* Recent Transactions */}
-      <Suspense fallback={<ChartSkeleton />}>
-        <TransactionsSection />
+      <Suspense
+        fallback={
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-2">
+              <ChartSkeleton />
+            </div>
+            <ChartSkeleton />
+          </div>
+        }
+      >
+        <TransactionsAndTopSpendingSection />
       </Suspense>
     </div>
   );

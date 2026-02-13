@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 
@@ -29,16 +29,18 @@ export function TopCategories({ data }: { data: TopCategory[] }) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle className="text-base">Top Spending</CardTitle>
-        <Link
-          href="/analytics"
-          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-        >
-          View all <ArrowRight className="h-3 w-3" />
-        </Link>
+        <CardAction>
+          <Link
+            href="/analytics"
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            View all <ArrowRight className="h-3 w-3" />
+          </Link>
+        </CardAction>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 px-4 sm:px-6">
         {data.slice(0, 5).map((category) => {
           const percentage = total > 0 ? (category.value / total) * 100 : 0;
           return (

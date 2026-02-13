@@ -112,25 +112,57 @@ export function DataExport() {
           `
         )
         .join("");
+      const logoUrl = `${window.location.origin}/flux.png`;
 
       const html = `
         <html>
           <head>
             <title>Flux Report</title>
             <style>
-              body { font-family: Arial, sans-serif; margin: 24px; color: #111; }
-              h1 { margin: 0 0 8px; font-size: 22px; }
-              p { margin: 4px 0; color: #444; }
-              table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-              th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left; }
-              th { background: #f5f5f5; }
+              @page { size: A4; margin: 18mm; }
+              body { font-family: "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; }
+              .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 16px; }
+              .brand { display: flex; align-items: center; gap: 10px; }
+              .brand img { width: 30px; height: 30px; object-fit: contain; }
+              .brand h1 { font-size: 20px; margin: 0; letter-spacing: 0.2px; }
+              .meta { text-align: right; font-size: 12px; color: #475569; line-height: 1.5; }
+              .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+              .summary .item { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; background: #f8fafc; }
+              .summary .label { font-size: 11px; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+              .summary .value { font-size: 14px; font-weight: 600; color: #0f172a; }
+              table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+              th, td { border: 1px solid #e2e8f0; padding: 8px; font-size: 11px; text-align: left; vertical-align: top; }
+              th { background: #f1f5f9; color: #0f172a; font-weight: 700; }
+              tbody tr:nth-child(even) { background: #fcfdff; }
+              td:nth-child(3), th:nth-child(3) { text-align: right; width: 90px; }
+              .footer { margin-top: 12px; font-size: 10px; color: #64748b; text-align: right; }
             </style>
           </head>
           <body>
-            <h1>Flux Financial Report</h1>
-            <p>Generated: ${new Date().toLocaleString()}</p>
-            <p>User: ${data.user?.email || "Unknown"}</p>
-            <p>Transactions included: ${tx.length}</p>
+            <div class="header">
+              <div class="brand">
+                <img src="${logoUrl}" alt="Flux" />
+                <h1>Flux Financial Report</h1>
+              </div>
+              <div class="meta">
+                <div>Generated: ${new Date().toLocaleString()}</div>
+                <div>User: ${data.user?.email || "Unknown"}</div>
+              </div>
+            </div>
+            <div class="summary">
+              <div class="item">
+                <div class="label">Transactions</div>
+                <div class="value">${tx.length}</div>
+              </div>
+              <div class="item">
+                <div class="label">Wallets</div>
+                <div class="value">${data.wallets.length}</div>
+              </div>
+              <div class="item">
+                <div class="label">Categories</div>
+                <div class="value">${data.categories.length}</div>
+              </div>
+            </div>
             <table>
               <thead>
                 <tr>
@@ -144,6 +176,7 @@ export function DataExport() {
               </thead>
               <tbody>${rows}</tbody>
             </table>
+            <div class="footer">Flux • Personal Finance Tracker</div>
           </body>
         </html>
       `;
