@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
@@ -40,8 +40,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency, getCurrencySymbol } from "@/lib/utils";
 import { createRecurringTransaction } from "@/lib/actions/recurring";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 const recurringSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
@@ -63,7 +64,9 @@ interface RecurringDialogProps {
 
 export function RecurringDialog({ categories, wallets, trigger }: RecurringDialogProps) {
   const [open, setOpen] = useState(false);
+  const [usdRate, setUsdRate] = useState<number | null>(null);
   const [transactionType, setTransactionType] = useState<"INCOME" | "EXPENSE">("EXPENSE");
+  const { currency, locale } = useCurrency();
 
   const form = useForm<RecurringFormData>({
     resolver: zodResolver(recurringSchema),
@@ -80,6 +83,9 @@ export function RecurringDialog({ categories, wallets, trigger }: RecurringDialo
 
   const isLoading = form.formState.isSubmitting;
   const filteredCategories = categories.filter((c) => c.type === transactionType);
+  const watchedAmount = useWatch({ control: form.control, name: "amount" });
+  const amountNumber = Number(watchedAmount || 0);
+  const currencySymbol = getCurrencySymbol(currency, locale);
 
   useEffect(() => {
     form.setValue("type", transactionType);
@@ -106,6 +112,35 @@ export function RecurringDialog({ categories, wallets, trigger }: RecurringDialo
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, wallets]);
+
+  useEffect(() => {
+    if (currency === "USD") {
+      setUsdRate(1);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    void fetch(`https://open.er-api.com/v6/latest/${currency}`, {
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then((data: { rates?: Record<string, number> }) => {
+        const rate = data?.rates?.USD;
+        if (!cancelled && typeof rate === "number" && Number.isFinite(rate)) {
+          setUsdRate(rate);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setUsdRate(null);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [currency]);
 
   async function onSubmit(data: RecurringFormData) {
     try {
@@ -158,10 +193,15 @@ export function RecurringDialog({ categories, wallets, trigger }: RecurringDialo
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{currencySymbol}</span>
                       <Input type="number" step="0.01" placeholder="0.00" className="pl-7" {...field} />
                     </div>
                   </FormControl>
+                  {amountNumber > 0 && currency !== "USD" && usdRate && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      ≈ {formatCurrency(amountNumber * usdRate, "USD", "en-US")} USD
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

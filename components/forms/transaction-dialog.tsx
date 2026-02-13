@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
@@ -40,8 +40,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency, getCurrencySymbol } from "@/lib/utils";
 import { createTransaction, updateTransaction } from "@/lib/actions/transactions";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 const transactionSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
@@ -78,9 +79,11 @@ export function TransactionDialog({
   defaultType = "EXPENSE",
 }: TransactionDialogProps) {
   const [open, setOpen] = useState(false);
+  const [usdRate, setUsdRate] = useState<number | null>(null);
   const [transactionType, setTransactionType] = useState<"INCOME" | "EXPENSE">(
     transaction?.type || defaultType
   );
+  const { currency, locale } = useCurrency();
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -96,6 +99,9 @@ export function TransactionDialog({
 
   const isLoading = form.formState.isSubmitting;
   const isEditing = !!transaction;
+  const watchedAmount = useWatch({ control: form.control, name: "amount" });
+  const amountNumber = Number(watchedAmount || 0);
+  const currencySymbol = getCurrencySymbol(currency, locale);
 
   // Update filtered categories based on type
   const filteredCategories = categories.filter(
@@ -139,6 +145,35 @@ export function TransactionDialog({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, transaction, wallets]);
+
+  useEffect(() => {
+    if (currency === "USD") {
+      setUsdRate(1);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    void fetch(`https://open.er-api.com/v6/latest/${currency}`, {
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then((data: { rates?: Record<string, number> }) => {
+        const rate = data?.rates?.USD;
+        if (!cancelled && typeof rate === "number" && Number.isFinite(rate)) {
+          setUsdRate(rate);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setUsdRate(null);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [currency]);
 
   async function onSubmit(data: TransactionFormData) {
     try {
@@ -199,7 +234,7 @@ export function TransactionDialog({
                   <FormControl>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        $
+                        {currencySymbol}
                       </span>
                       <Input
                         type="number"
@@ -210,6 +245,11 @@ export function TransactionDialog({
                       />
                     </div>
                   </FormControl>
+                  {amountNumber > 0 && currency !== "USD" && usdRate && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      ≈ {formatCurrency(amountNumber * usdRate, "USD", "en-US")} USD
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

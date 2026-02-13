@@ -27,6 +27,23 @@ export function formatCurrency(
 }
 
 /**
+ * Extract currency symbol for UI inputs
+ */
+export function getCurrencySymbol(
+  currency: string = "USD",
+  locale: string = "en-US"
+): string {
+  const parts = new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).formatToParts(0);
+
+  return parts.find((part) => part.type === "currency")?.value || currency;
+}
+
+/**
  * Format compact currency (e.g., $1.2K, $3.5M)
  */
 export function formatCompactCurrency(
