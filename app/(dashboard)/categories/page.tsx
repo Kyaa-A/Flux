@@ -4,7 +4,7 @@ import { getCategories, getCategorySpending } from "@/lib/actions/categories";
 import { CategoryCard } from "@/components/categories/category-card";
 import { CategoryDialog } from "@/components/categories/category-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata = {
@@ -46,7 +46,7 @@ async function CategoriesContent() {
 
   const incomeCategories = categories.filter((c) => c.type === "INCOME" && !c.isArchived);
   const expenseCategories = categories.filter((c) => c.type === "EXPENSE" && !c.isArchived);
-  const archivedCategories = categories.filter((c) => c.isArchived);
+  const archivedCategories = categories.filter((c) => c.isArchived && c.type !== "TRANSFER");
 
   return (
     <div className="space-y-8">

@@ -99,6 +99,7 @@ export async function getRecentTransactions(limit: number = 10) {
     amount: Number(t.amount),
     type: t.type,
     description: t.description,
+    notes: t.notes,
     date: t.date,
     category: {
       id: t.category.id,
@@ -193,33 +194,34 @@ export async function createTransaction(data: TransactionFormData) {
   try {
     const validatedData = transactionSchema.parse(data);
 
-    // Create transaction
-    const transaction = await prisma.transaction.create({
-      data: {
-        amount: validatedData.amount,
-        type: validatedData.type,
-        description: validatedData.description || null,
-        notes: validatedData.notes || null,
-        date: validatedData.date,
-        isRecurring: validatedData.isRecurring,
-        categoryId: validatedData.categoryId,
-        walletId: validatedData.walletId,
-        userId,
-      },
-    });
-
     // Update wallet balance
     const balanceChange =
       validatedData.type === "INCOME"
         ? validatedData.amount
         : -validatedData.amount;
 
-    await prisma.wallet.update({
-      where: { id: validatedData.walletId },
-      data: {
-        balance: { increment: balanceChange },
-      },
-    });
+    // Create transaction and update wallet atomically
+    const [transaction] = await prisma.$transaction([
+      prisma.transaction.create({
+        data: {
+          amount: validatedData.amount,
+          type: validatedData.type,
+          description: validatedData.description || null,
+          notes: validatedData.notes || null,
+          date: validatedData.date,
+          isRecurring: validatedData.isRecurring,
+          categoryId: validatedData.categoryId,
+          walletId: validatedData.walletId,
+          userId,
+        },
+      }),
+      prisma.wallet.update({
+        where: { id: validatedData.walletId, userId },
+        data: {
+          balance: { increment: balanceChange },
+        },
+      }),
+    ]);
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/transactions");
@@ -252,7 +254,7 @@ export async function deleteTransaction(transactionId: string) {
 
     await prisma.$transaction([
       prisma.wallet.update({
-        where: { id: transaction.walletId },
+        where: { id: transaction.walletId, userId },
         data: { balance: { increment: balanceChange } },
       }),
       prisma.transaction.delete({

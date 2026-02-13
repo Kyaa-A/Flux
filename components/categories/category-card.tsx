@@ -33,7 +33,7 @@ interface CategoryCardProps {
   category: {
     id: string;
     name: string;
-    type: "INCOME" | "EXPENSE";
+    type: "INCOME" | "EXPENSE" | "TRANSFER";
     color: string;
     icon: string;
     budgetLimit: number | null;
@@ -97,23 +97,25 @@ export function CategoryCard({ category, spent = 0 }: CategoryCardProps) {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <CategoryDialog
-                  category={{
-                    ...category,
-                    type: category.type as "INCOME" | "EXPENSE",
-                  }}
-                  trigger={
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                  }
-                />
+                {category.type !== "TRANSFER" && (
+                  <CategoryDialog
+                    category={{
+                      ...category,
+                      type: category.type as "INCOME" | "EXPENSE",
+                    }}
+                    trigger={
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                    }
+                  />
+                )}
                 <DropdownMenuItem onClick={handleArchiveToggle} disabled={isPending}>
                   {category.isArchived ? (
                     <>

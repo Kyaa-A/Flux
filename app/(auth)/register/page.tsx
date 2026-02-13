@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
-import { Loader2, Eye, EyeOff, Check } from "lucide-react";
+import { Loader2, Eye, EyeOff, Check, Chrome, Github } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,10 @@ import { registerUser } from "@/lib/actions/auth";
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const isGoogleEnabled = process.env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED === "true";
+  const isGithubEnabled = process.env.NEXT_PUBLIC_AUTH_GITHUB_ENABLED === "true";
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -64,10 +68,19 @@ export default function RegisterPage() {
 
       toast.success("Account created! Check your email to verify your account.");
       router.push("/login");
-    } catch (error) {
+    } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleOAuthSignIn(provider: "google" | "github") {
+    setOauthLoading(provider);
+    try {
+      await signIn(provider, { callbackUrl: "/dashboard" });
+    } finally {
+      setOauthLoading(null);
     }
   }
 
@@ -265,6 +278,48 @@ export default function RegisterPage() {
                 </Button>
               </form>
             </Form>
+
+            {(isGoogleEnabled || isGithubEnabled) && (
+              <>
+                <div className="my-5 flex items-center gap-3">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">or continue with</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {isGoogleEnabled && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={oauthLoading !== null}
+                      onClick={() => handleOAuthSignIn("google")}
+                    >
+                      {oauthLoading === "google" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Chrome className="mr-2 h-4 w-4" />
+                      )}
+                      Google
+                    </Button>
+                  )}
+                  {isGithubEnabled && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={oauthLoading !== null}
+                      onClick={() => handleOAuthSignIn("github")}
+                    >
+                      {oauthLoading === "github" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Github className="mr-2 h-4 w-4" />
+                      )}
+                      GitHub
+                    </Button>
+                  )}
+                </div>
+              </>
+            )}
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
               Already have an account?{" "}

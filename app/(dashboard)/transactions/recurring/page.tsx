@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Plus, Repeat, Pause, Play, Trash2, MoreHorizontal } from "lucide-react";
+import { Plus } from "lucide-react";
 import { getRecurringTransactions } from "@/lib/actions/recurring";
 import { getCategories } from "@/lib/actions/categories";
 import { getWallets } from "@/lib/actions/wallets";

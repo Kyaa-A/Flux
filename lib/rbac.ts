@@ -3,7 +3,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { createNotification } from "@/lib/actions/notifications";
+import { createNotification } from "@/lib/notifications";
+import { logAuditAction } from "@/lib/audit";
 
 // Role types
 export type Role = "USER" | "ADMIN" | "SUPER_ADMIN";
@@ -104,7 +105,7 @@ export async function requireSuperAdmin() {
  * Get all users (admin only)
  */
 export async function getAllUsers() {
-  const currentUser = await requireAdmin();
+  await requireAdmin();
 
   const users = await prisma.user.findMany({
     select: {
@@ -145,11 +146,19 @@ export async function updateUserRole(userId: string, newRole: Role) {
     data: { role: newRole },
   });
 
+  await logAuditAction({
+    action: "ADMIN_ROLE_UPDATED",
+    actorId: currentUser.id,
+    targetUserId: userId,
+    details: { newRole },
+  });
+
   await createNotification({
     userId,
     title: "Role updated",
     message: `Your role has been changed to ${newRole.replace("_", " ")}.`,
     type: "INFO",
+    preferenceKey: "adminAccountStatus",
   });
 
   return { success: true };
@@ -192,12 +201,20 @@ export async function banUser(userId: string, reason: string) {
     },
   });
 
+  await logAuditAction({
+    action: "ADMIN_USER_BANNED",
+    actorId: currentUser.id,
+    targetUserId: userId,
+    details: { reason },
+  });
+
   // Notify the banned user
   await createNotification({
     userId,
     title: "Account suspended",
     message: reason ? `Reason: ${reason}` : "Your account has been suspended by an administrator.",
     type: "ERROR",
+    preferenceKey: "adminAccountStatus",
   });
 
   return { success: true };
@@ -207,7 +224,7 @@ export async function banUser(userId: string, reason: string) {
  * Unban user (admin only)
  */
 export async function unbanUser(userId: string) {
-  await requireAdmin();
+  const currentUser = await requireAdmin();
 
   await prisma.user.update({
     where: { id: userId },
@@ -218,11 +235,18 @@ export async function unbanUser(userId: string) {
     },
   });
 
+  await logAuditAction({
+    action: "ADMIN_USER_UNBANNED",
+    actorId: currentUser.id,
+    targetUserId: userId,
+  });
+
   await createNotification({
     userId,
     title: "Account restored",
     message: "Your account suspension has been lifted.",
     type: "SUCCESS",
+    preferenceKey: "adminAccountStatus",
   });
 
   return { success: true };
@@ -262,6 +286,13 @@ export async function toggleUserActive(userId: string) {
     data: { isActive: newActive },
   });
 
+  await logAuditAction({
+    action: "ADMIN_USER_ACTIVE_TOGGLED",
+    actorId: currentUser.id,
+    targetUserId: userId,
+    details: { isActive: newActive },
+  });
+
   await createNotification({
     userId,
     title: newActive ? "Account activated" : "Account deactivated",
@@ -269,6 +300,7 @@ export async function toggleUserActive(userId: string) {
       ? "Your account has been activated by an administrator."
       : "Your account has been deactivated by an administrator.",
     type: newActive ? "SUCCESS" : "WARNING",
+    preferenceKey: "adminAccountStatus",
   });
 
   return { success: true };

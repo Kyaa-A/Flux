@@ -16,8 +16,9 @@ import { useCurrency } from "@/components/providers/currency-provider";
 interface Transaction {
   id: string;
   amount: number;
-  type: "INCOME" | "EXPENSE";
+  type: "INCOME" | "EXPENSE" | "TRANSFER";
   description: string | null;
+  notes?: string | null;
   date: Date;
   category: {
     id: string;
@@ -90,6 +91,11 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                       className="w-5 h-5"
                       style={{ color: transaction.category.color }}
                     />
+                  ) : transaction.type === "EXPENSE" ? (
+                    <ArrowUpRight
+                      className="w-5 h-5"
+                      style={{ color: transaction.category.color }}
+                    />
                   ) : (
                     <ArrowUpRight
                       className="w-5 h-5"
@@ -128,10 +134,18 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                 className={`text-sm font-semibold ${
                   transaction.type === "INCOME"
                     ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-rose-600 dark:text-rose-400"
+                    : transaction.type === "EXPENSE"
+                    ? "text-rose-600 dark:text-rose-400"
+                    : (transaction.notes === "TRANSFER_IN"
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-rose-600 dark:text-rose-400")
                 }`}
               >
-                {transaction.type === "INCOME" ? "+" : "-"}
+                {transaction.type === "INCOME"
+                  ? "+"
+                  : transaction.type === "EXPENSE"
+                  ? "-"
+                  : (transaction.notes === "TRANSFER_IN" ? "+" : "-")}
                 {formatAmount(transaction.amount)}
               </div>
             </div>

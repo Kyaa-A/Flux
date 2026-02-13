@@ -3,8 +3,10 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/db";
-import { registerSchema, type RegisterFormData } from "@/lib/validations";
+import { registerSchema, resetPasswordSchema, type RegisterFormData } from "@/lib/validations";
 import { sendPasswordResetEmail, sendVerificationEmail } from "@/lib/email";
+import { bootstrapUserWorkspace } from "@/lib/user-bootstrap";
+import { logAuditAction } from "@/lib/audit";
 
 export async function registerUser(data: RegisterFormData) {
   try {
@@ -32,41 +34,13 @@ export async function registerUser(data: RegisterFormData) {
       },
     });
 
-    // Create default wallet for new user
-    await prisma.wallet.create({
-      data: {
-        name: "Cash",
-        type: "CASH",
-        balance: 0,
-        color: "#22c55e",
-        icon: "wallet",
-        userId: user.id,
-      },
-    });
+    await bootstrapUserWorkspace(user.id);
 
-    // Create default categories
-    const defaultCategories = [
-      // Income categories
-      { name: "Salary", type: "INCOME" as const, color: "#22c55e", icon: "briefcase" },
-      { name: "Freelance", type: "INCOME" as const, color: "#14b8a6", icon: "laptop" },
-      { name: "Investment", type: "INCOME" as const, color: "#6366f1", icon: "trending-up" },
-      { name: "Other Income", type: "INCOME" as const, color: "#8b5cf6", icon: "plus-circle" },
-      // Expense categories
-      { name: "Food & Dining", type: "EXPENSE" as const, color: "#f97316", icon: "utensils" },
-      { name: "Transportation", type: "EXPENSE" as const, color: "#eab308", icon: "car" },
-      { name: "Shopping", type: "EXPENSE" as const, color: "#ec4899", icon: "shopping-bag" },
-      { name: "Entertainment", type: "EXPENSE" as const, color: "#f43f5e", icon: "gamepad-2" },
-      { name: "Bills & Utilities", type: "EXPENSE" as const, color: "#06b6d4", icon: "file-text" },
-      { name: "Healthcare", type: "EXPENSE" as const, color: "#10b981", icon: "heart-pulse" },
-      { name: "Education", type: "EXPENSE" as const, color: "#3b82f6", icon: "graduation-cap" },
-      { name: "Other Expense", type: "EXPENSE" as const, color: "#71717a", icon: "more-horizontal" },
-    ];
-
-    await prisma.category.createMany({
-      data: defaultCategories.map((cat) => ({
-        ...cat,
-        userId: user.id,
-      })),
+    await logAuditAction({
+      action: "AUTH_REGISTER_SUCCESS",
+      actorId: user.id,
+      targetUserId: user.id,
+      details: { method: "credentials" },
     });
 
     // Send verification email
@@ -140,6 +114,9 @@ export async function requestPasswordReset(email: string) {
  */
 export async function resetPassword(token: string, newPassword: string) {
   try {
+    // Validate password strength
+    resetPasswordSchema.shape.password.parse(newPassword);
+
     const resetToken = await prisma.passwordResetToken.findUnique({
       where: { token },
     });
@@ -160,6 +137,18 @@ export async function resetPassword(token: string, newPassword: string) {
       where: { email: resetToken.email },
       data: { password: hashedPassword },
     });
+
+    const resetUser = await prisma.user.findUnique({
+      where: { email: resetToken.email },
+      select: { id: true },
+    });
+    if (resetUser) {
+      await logAuditAction({
+        action: "AUTH_PASSWORD_RESET_SUCCESS",
+        actorId: resetUser.id,
+        targetUserId: resetUser.id,
+      });
+    }
 
     // Delete the used token
     await prisma.passwordResetToken.delete({ where: { token } });

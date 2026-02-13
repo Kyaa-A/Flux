@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { processRecurringTransactions } from "@/lib/actions/recurring";
-import { createBudgetAlertNotifications } from "@/lib/actions/notifications";
+import { processRecurringTransactions } from "@/lib/recurring-processor";
+import { createBudgetAlertNotifications } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  // Require a secret to prevent unauthorized calls
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // Require a secret to prevent unauthorized calls (fail-closed)
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

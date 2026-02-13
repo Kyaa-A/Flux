@@ -1,11 +1,5 @@
 import { z } from "zod";
 
-// Helper to handle string/number coercion for form inputs
-const numericString = z
-  .string()
-  .transform((val) => parseFloat(val))
-  .refine((val) => !isNaN(val), "Must be a valid number");
-
 // Transaction form validation
 export const transactionSchema = z.object({
   amount: z.number().positive("Amount must be positive").max(999999999.99, "Amount is too large"),
@@ -120,3 +114,52 @@ export const resetPasswordSchema = z.object({
 });
 
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+
+// Change password validation
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+});
+
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
+
+// Update profile validation
+export const updateProfileSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  currency: z.string().length(3).optional(),
+  locale: z.string().min(2).max(10).optional(),
+});
+
+export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;
+
+// Notification preferences validation
+export const notificationPreferencesSchema = z.object({
+  budgetWarnings: z.boolean(),
+  budgetExceeded: z.boolean(),
+  recurringProcessed: z.boolean(),
+  adminAccountStatus: z.boolean(),
+  largeTransaction: z.boolean(),
+  largeTransactionThreshold: z.number().positive().max(999999999.99).nullable(),
+});
+
+export type NotificationPreferencesFormData = z.infer<typeof notificationPreferencesSchema>;
+
+// Recurring transaction validation
+export const recurringTransactionSchema = z.object({
+  amount: z.number().positive("Amount must be positive").max(999999999.99, "Amount is too large"),
+  type: z.enum(["INCOME", "EXPENSE"]),
+  description: z.string().max(255, "Description too long").optional(),
+  frequency: z.enum(["DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"]),
+  startDate: z.date(),
+  endDate: z.date().optional().nullable(),
+  walletId: z.string().min(1, "Please select a wallet"),
+  categoryId: z.string().min(1, "Please select a category"),
+  isActive: z.boolean().optional(),
+});
+
+export type RecurringTransactionFormData = z.infer<typeof recurringTransactionSchema>;

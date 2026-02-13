@@ -101,6 +101,7 @@ export function TransactionFilters({
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="INCOME">Income</SelectItem>
             <SelectItem value="EXPENSE">Expense</SelectItem>
+            <SelectItem value="TRANSFER">Transfer</SelectItem>
           </SelectContent>
         </Select>
 

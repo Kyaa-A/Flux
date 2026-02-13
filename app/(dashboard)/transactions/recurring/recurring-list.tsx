@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Repeat, Pause, Play, Trash2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
@@ -15,7 +15,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { updateRecurringTransaction, deleteRecurringTransaction } from "@/lib/actions/recurring";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  deleteRecurringTransaction,
+  pauseRecurringTransaction,
+  resumeRecurringTransaction,
+} from "@/lib/actions/recurring";
 import { formatDate } from "@/lib/utils";
 import { useCurrency } from "@/components/providers/currency-provider";
 
@@ -44,20 +58,27 @@ interface RecurringItem {
 export function RecurringList({ recurring }: { recurring: RecurringItem[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const { formatAmount } = useCurrency();
 
   const handleToggle = (id: string, isActive: boolean) => {
     startTransition(async () => {
-      await updateRecurringTransaction(id, { isActive: !isActive });
+      if (isActive) {
+        await pauseRecurringTransaction(id);
+      } else {
+        await resumeRecurringTransaction(id);
+      }
       toast.success(isActive ? "Recurring paused" : "Recurring resumed");
       router.refresh();
     });
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = () => {
+    if (!deleteId) return;
     startTransition(async () => {
-      await deleteRecurringTransaction(id);
+      await deleteRecurringTransaction(deleteId);
       toast.success("Recurring transaction deleted");
+      setDeleteId(null);
       router.refresh();
     });
   };
@@ -144,7 +165,7 @@ export function RecurringList({ recurring }: { recurring: RecurringItem[] }) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
-                    onClick={() => handleDelete(item.id)}
+                    onClick={() => setDeleteId(item.id)}
                   >
                     <Trash2 className="h-4 w-4 mr-2" /> Delete
                   </DropdownMenuItem>
@@ -154,6 +175,27 @@ export function RecurringList({ recurring }: { recurring: RecurringItem[] }) {
           </div>
         ))}
       </CardContent>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Recurring Transaction</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this recurring transaction? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

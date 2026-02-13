@@ -47,11 +47,12 @@ import { toast } from "sonner";
 interface Transaction {
   id: string;
   amount: number;
-  type: "INCOME" | "EXPENSE";
+  type: "INCOME" | "EXPENSE" | "TRANSFER";
   description: string | null;
   date: Date;
   category: { id: string; name: string; color: string; icon: string };
   wallet: { id: string; name: string; color: string };
+  notes?: string | null;
 }
 
 interface TransactionListProps {
@@ -79,7 +80,11 @@ export function TransactionList({
     if (!deleteId) return;
 
     try {
-      await deleteTransaction(deleteId);
+      const result = await deleteTransaction(deleteId);
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
       toast.success("Transaction deleted");
       setDeleteId(null);
       router.refresh();
@@ -140,8 +145,10 @@ export function TransactionList({
                     <div className="flex items-center gap-2">
                       {transaction.type === "INCOME" ? (
                         <TrendingUp className="h-4 w-4 text-emerald-500" />
-                      ) : (
+                      ) : transaction.type === "EXPENSE" ? (
                         <TrendingDown className="h-4 w-4 text-rose-500" />
+                      ) : (
+                        <TrendingUp className="h-4 w-4 text-indigo-500" />
                       )}
                       <span>{transaction.description || "No description"}</span>
                     </div>
@@ -167,11 +174,19 @@ export function TransactionList({
                   </TableCell>
                   <TableCell className="text-right">
                     <span className={`font-semibold ${
-                      transaction.type === "INCOME" 
-                        ? "text-emerald-500" 
-                        : "text-rose-500"
+                      transaction.type === "INCOME"
+                        ? "text-emerald-500"
+                        : transaction.type === "EXPENSE"
+                        ? "text-rose-500"
+                        : (transaction.notes === "TRANSFER_IN"
+                          ? "text-emerald-500"
+                          : "text-rose-500")
                     }`}>
-                      {transaction.type === "INCOME" ? "+" : "-"}
+                      {transaction.type === "INCOME"
+                        ? "+"
+                        : transaction.type === "EXPENSE"
+                        ? "-"
+                        : (transaction.notes === "TRANSFER_IN" ? "+" : "-")}
                       {formatCurrency(transaction.amount)}
                     </span>
                   </TableCell>
@@ -183,25 +198,27 @@ export function TransactionList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <TransactionDialog
-                          categories={categories}
-                          wallets={wallets}
-                          transaction={{
-                            id: transaction.id,
-                            amount: transaction.amount,
-                            type: transaction.type,
-                            description: transaction.description || "",
-                            date: new Date(transaction.date),
-                            categoryId: transaction.category.id,
-                            walletId: transaction.wallet.id,
-                          }}
-                          trigger={
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                          }
-                        />
+                        {transaction.type !== "TRANSFER" && (
+                          <TransactionDialog
+                            categories={categories}
+                            wallets={wallets}
+                            transaction={{
+                              id: transaction.id,
+                              amount: transaction.amount,
+                              type: transaction.type,
+                              description: transaction.description || "",
+                              date: new Date(transaction.date),
+                              categoryId: transaction.category.id,
+                              walletId: transaction.wallet.id,
+                            }}
+                            trigger={
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                            }
+                          />
+                        )}
                         <DropdownMenuItem 
                           className="text-destructive"
                           onClick={() => setDeleteId(transaction.id)}

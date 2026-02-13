@@ -13,7 +13,15 @@ interface IncomeExpenseBarProps {
   data: IncomeExpenseData[];
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface TooltipPayloadItem {
+  value: number;
+}
+
+function CustomTooltip({ active, payload, label }: {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string;
+}) {
   if (active && payload && payload.length) {
     return (
       <div className="bg-popover border border-border p-2 rounded-lg shadow-xl">
@@ -28,7 +36,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     );
   }
   return null;
-};
+}
 
 export function IncomeExpenseBar({ data }: IncomeExpenseBarProps) {
   if (data.length === 0) {

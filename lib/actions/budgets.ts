@@ -1,9 +1,11 @@
 "use server";
 
+import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import type { BudgetPeriod } from "@/app/generated/prisma/client";
+import { budgetSchema } from "@/lib/validations";
 
 async function getAuthUserId() {
   const session = await auth();
@@ -18,16 +20,22 @@ function getPeriodDateRange(period: BudgetPeriod, startDate: Date) {
 
   switch (period) {
     case "WEEKLY": {
-      const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-      periodStart = new Date(now.getFullYear(), now.getMonth(), diff);
+      const startDay = startDate.getDay();
+      const currentDay = now.getDay();
+      const diff = (currentDay - startDay + 7) % 7;
+      periodStart = new Date(now);
+      periodStart.setDate(now.getDate() - diff);
       periodEnd = new Date(periodStart);
       periodEnd.setDate(periodStart.getDate() + 6);
       break;
     }
     case "MONTHLY": {
-      periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const anchorDay = startDate.getDate();
+      periodStart = new Date(now.getFullYear(), now.getMonth(), anchorDay);
+      if (periodStart > now) periodStart.setMonth(periodStart.getMonth() - 1);
+      periodEnd = new Date(periodStart);
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+      periodEnd.setDate(periodEnd.getDate() - 1);
       break;
     }
     case "QUARTERLY": {
@@ -123,14 +131,16 @@ export async function createBudget(data: {
 }) {
   const userId = await getAuthUserId();
 
+  const validated = budgetSchema.parse(data);
+
   const budget = await prisma.budget.create({
     data: {
-      name: data.name,
-      amount: data.amount,
-      period: data.period,
-      startDate: data.startDate,
-      endDate: data.endDate || null,
-      categoryIds: data.categoryIds,
+      name: validated.name,
+      amount: validated.amount,
+      period: validated.period,
+      startDate: validated.startDate,
+      endDate: validated.endDate || null,
+      categoryIds: validated.categoryIds,
       userId,
     },
   });
@@ -158,9 +168,13 @@ export async function updateBudget(
 ) {
   const userId = await getAuthUserId();
 
+  const validated = budgetSchema.partial().extend({
+    isActive: z.boolean().optional(),
+  }).parse(data);
+
   const budget = await prisma.budget.update({
     where: { id, userId },
-    data,
+    data: validated,
   });
 
   revalidatePath("/budgets");

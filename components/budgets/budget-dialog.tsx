@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { CalendarIcon, Loader2 } from "lucide-react";
@@ -76,7 +77,10 @@ export function BudgetDialog({ budget, categories, trigger }: BudgetDialogProps)
 
   const isLoading = form.formState.isSubmitting;
   const isEditing = !!budget;
-  const selectedCategoryIds = form.watch("categoryIds");
+  const selectedCategoryIds = useWatch({
+    control: form.control,
+    name: "categoryIds",
+  });
 
   useEffect(() => {
     if (open) {

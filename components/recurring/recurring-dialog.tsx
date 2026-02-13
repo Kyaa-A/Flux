@@ -87,7 +87,25 @@ export function RecurringDialog({ categories, wallets, trigger }: RecurringDialo
     if (currentCat && currentCat.type !== transactionType) {
       form.setValue("categoryId", "");
     }
-  }, [transactionType, categories, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactionType, categories]);
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setTransactionType("EXPENSE");
+      form.reset({
+        amount: 0,
+        type: "EXPENSE",
+        description: "",
+        frequency: "MONTHLY",
+        startDate: new Date(),
+        categoryId: "",
+        walletId: wallets[0]?.id || "",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, wallets]);
 
   async function onSubmit(data: RecurringFormData) {
     try {

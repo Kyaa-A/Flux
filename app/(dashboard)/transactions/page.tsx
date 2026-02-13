@@ -12,7 +12,7 @@ import { formatCurrency } from "@/lib/utils";
 
 export const metadata = {
   title: "Transactions | Flux",
-  description: "Manage your income and expenses",
+  description: "Manage your income, expenses, and transfers",
 };
 
 async function TransactionStats() {
@@ -99,7 +99,7 @@ export default async function TransactionsPage({
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1");
-  const type = params.type as "INCOME" | "EXPENSE" | "all" | undefined;
+  const type = params.type as "INCOME" | "EXPENSE" | "TRANSFER" | "all" | undefined;
   
   const [transactionsData, categories, wallets] = await Promise.all([
     getTransactions({
@@ -121,7 +121,7 @@ export default async function TransactionsPage({
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Transactions</h1>
           <p className="text-muted-foreground">
-            Track and manage all your income and expenses
+            Track and manage all your income, expenses, and transfers
           </p>
         </div>
         <TransactionDialog

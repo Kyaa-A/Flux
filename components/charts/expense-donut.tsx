@@ -2,7 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrency, formatPercentage } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 
 interface ExpenseDonutProps {
   data: {
@@ -12,30 +12,38 @@ interface ExpenseDonutProps {
   }[];
 }
 
+interface TooltipPayloadItem {
+  payload: { name: string; value: number; color: string };
+}
+
+function CustomTooltip({ active, payload, total }: {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  total: number;
+}) {
+  if (active && payload && payload.length) {
+    const item = payload[0].payload;
+    const percentage = total > 0 ? (item.value / total) * 100 : 0;
+    return (
+      <div className="bg-popover border border-border rounded-lg p-3 shadow-xl">
+        <div className="flex items-center gap-2 mb-1">
+          <div
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: item.color }}
+          />
+          <span className="text-foreground font-medium">{item.name}</span>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {formatCurrency(item.value)} ({percentage.toFixed(1)}%)
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
 export function ExpenseDonut({ data }: ExpenseDonutProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const item = payload[0].payload;
-      const percentage = total > 0 ? (item.value / total) * 100 : 0;
-      return (
-        <div className="bg-popover border border-border rounded-lg p-3 shadow-xl">
-          <div className="flex items-center gap-2 mb-1">
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: item.color }}
-            />
-            <span className="text-foreground font-medium">{item.name}</span>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {formatCurrency(item.value)} ({percentage.toFixed(1)}%)
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
 
   if (data.length === 0) {
     return (
@@ -75,7 +83,7 @@ export function ExpenseDonut({ data }: ExpenseDonutProps) {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip total={total} />} />
             </PieChart>
           </ResponsiveContainer>
         </div>

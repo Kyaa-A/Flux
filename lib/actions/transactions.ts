@@ -3,6 +3,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { transactionSchema } from "@/lib/validations";
+import { maybeCreateLargeTransactionNotification } from "@/lib/notifications";
 
 /**
  * Get all transactions for the current user with filters
@@ -10,7 +12,7 @@ import { revalidatePath } from "next/cache";
 export async function getTransactions(params: {
   page?: number;
   limit?: number;
-  type?: "INCOME" | "EXPENSE" | "all";
+  type?: "INCOME" | "EXPENSE" | "TRANSFER" | "all";
   categoryId?: string;
   walletId?: string;
   startDate?: Date;
@@ -92,30 +94,48 @@ export async function createTransaction(data: {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  const transaction = await prisma.transaction.create({
-    data: {
-      ...data,
-      userId: session.user.id,
-    },
-    include: {
-      category: true,
-      wallet: true,
-    },
-  });
+  const validated = transactionSchema.parse(data);
 
-  // Update wallet balance
-  const balanceChange = data.type === "INCOME" ? data.amount : -data.amount;
-  await prisma.wallet.update({
-    where: { id: data.walletId },
-    data: {
-      balance: {
-        increment: balanceChange,
+  const balanceChange = validated.type === "INCOME" ? validated.amount : -validated.amount;
+
+  const [transaction] = await prisma.$transaction([
+    prisma.transaction.create({
+      data: {
+        amount: validated.amount,
+        type: validated.type,
+        description: validated.description || null,
+        notes: validated.notes || null,
+        date: validated.date,
+        categoryId: validated.categoryId,
+        walletId: validated.walletId,
+        userId: session.user.id,
       },
-    },
-  });
+      include: {
+        category: true,
+        wallet: true,
+      },
+    }),
+    prisma.wallet.update({
+      where: { id: validated.walletId, userId: session.user.id },
+      data: {
+        balance: {
+          increment: balanceChange,
+        },
+      },
+    }),
+  ]);
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
+
+  if (transaction.type !== "TRANSFER") {
+    await maybeCreateLargeTransactionNotification({
+      userId: session.user.id,
+      amount: Number(transaction.amount),
+      type: transaction.type,
+      description: transaction.description,
+    });
+  }
 
   return { ...transaction, amount: Number(transaction.amount) };
 }
@@ -138,43 +158,70 @@ export async function updateTransaction(
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
+  const validated = transactionSchema.partial().parse(data);
+
   // Get original transaction to calculate balance adjustment
   const original = await prisma.transaction.findUnique({
     where: { id, userId: session.user.id },
   });
 
   if (!original) throw new Error("Transaction not found");
+  if (original.type === "TRANSFER") {
+    return { error: "Transfer transactions cannot be edited. Create a new transfer instead." };
+  }
 
-  const transaction = await prisma.transaction.update({
-    where: { id, userId: session.user.id },
-    data,
-    include: {
-      category: true,
-      wallet: true,
-    },
-  });
+  const walletChanged = validated.walletId && validated.walletId !== original.walletId;
 
-  // Adjust wallet balance if amount or type changed
-  if (data.amount !== undefined || data.type !== undefined) {
-    const oldBalance = original.type === "INCOME" 
-      ? Number(original.amount) 
-      : -Number(original.amount);
-    const newBalance = (data.type || original.type) === "INCOME"
-      ? (data.amount ?? Number(original.amount))
-      : -(data.amount ?? Number(original.amount));
-    
-    await prisma.wallet.update({
-      where: { id: data.walletId || original.walletId },
-      data: {
-        balance: {
-          increment: newBalance - oldBalance,
-        },
+  const oldBalance = original.type === "INCOME"
+    ? Number(original.amount)
+    : -Number(original.amount);
+  const newType = validated.type || original.type;
+  const newAmount = validated.amount ?? Number(original.amount);
+  const newBalance = newType === "INCOME" ? newAmount : -newAmount;
+
+  const transaction = await prisma.$transaction(async (tx) => {
+    const updated = await tx.transaction.update({
+      where: { id, userId: session.user.id },
+      data: validated,
+      include: {
+        category: true,
+        wallet: true,
       },
     });
-  }
+
+    if (walletChanged) {
+      // Reverse balance on old wallet
+      await tx.wallet.update({
+        where: { id: original.walletId, userId: session.user.id },
+        data: { balance: { increment: -oldBalance } },
+      });
+      // Apply new balance to new wallet
+      await tx.wallet.update({
+        where: { id: validated.walletId!, userId: session.user.id },
+        data: { balance: { increment: newBalance } },
+      });
+    } else if (validated.amount !== undefined || validated.type !== undefined) {
+      // Same wallet, adjust the difference
+      await tx.wallet.update({
+        where: { id: original.walletId, userId: session.user.id },
+        data: { balance: { increment: newBalance - oldBalance } },
+      });
+    }
+
+    return updated;
+  });
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
+
+  if (transaction.type !== "TRANSFER") {
+    await maybeCreateLargeTransactionNotification({
+      userId: session.user.id,
+      amount: Number(transaction.amount),
+      type: transaction.type,
+      description: transaction.description,
+    });
+  }
 
   return { ...transaction, amount: Number(transaction.amount) };
 }
@@ -192,23 +239,55 @@ export async function deleteTransaction(id: string) {
 
   if (!transaction) throw new Error("Transaction not found");
 
-  // Reverse the wallet balance change
-  const balanceChange = transaction.type === "INCOME" 
-    ? -Number(transaction.amount) 
-    : Number(transaction.amount);
-  
-  await prisma.wallet.update({
-    where: { id: transaction.walletId },
-    data: {
-      balance: {
-        increment: balanceChange,
-      },
-    },
-  });
+  // Delete both legs of a transfer as a single atomic rollback
+  if (transaction.type === "TRANSFER" && transaction.transferGroupId) {
+    const transferTransactions = await prisma.transaction.findMany({
+      where: { userId: session.user.id, transferGroupId: transaction.transferGroupId },
+      select: { id: true, walletId: true, amount: true, notes: true },
+    });
 
-  await prisma.transaction.delete({
-    where: { id, userId: session.user.id },
-  });
+    await prisma.$transaction([
+      ...transferTransactions.map((t) => {
+        const direction = t.notes === "TRANSFER_IN" ? "IN" : "OUT";
+        const delta = direction === "IN" ? -Number(t.amount) : Number(t.amount);
+        return prisma.wallet.update({
+          where: { id: t.walletId, userId: session.user.id },
+          data: { balance: { increment: delta } },
+        });
+      }),
+      prisma.transaction.deleteMany({
+        where: { userId: session.user.id, transferGroupId: transaction.transferGroupId },
+      }),
+    ]);
+
+    revalidatePath("/transactions");
+    revalidatePath("/dashboard");
+    revalidatePath("/wallets");
+
+    return { success: true };
+  }
+  if (transaction.type === "TRANSFER") {
+    return { error: "Transfer transaction is missing a transfer group and cannot be safely deleted." };
+  }
+
+  // Reverse the wallet balance change
+  const balanceChange = transaction.type === "INCOME"
+    ? -Number(transaction.amount)
+    : Number(transaction.amount);
+
+  await prisma.$transaction([
+    prisma.wallet.update({
+      where: { id: transaction.walletId, userId: session.user.id },
+      data: {
+        balance: {
+          increment: balanceChange,
+        },
+      },
+    }),
+    prisma.transaction.delete({
+      where: { id, userId: session.user.id },
+    }),
+  ]);
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");

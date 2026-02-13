@@ -13,7 +13,15 @@ interface CategoryPieProps {
   data: CategoryData[];
 }
 
-const CustomTooltip = ({ active, payload }: any) => {
+interface TooltipPayloadItem {
+  name: string;
+  value: number;
+}
+
+function CustomTooltip({ active, payload }: {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+}) {
   if (active && payload && payload.length) {
     return (
       <div className="bg-popover border border-border p-2 rounded-lg shadow-xl">
@@ -25,7 +33,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     );
   }
   return null;
-};
+}
 
 export function CategoryPie({ data }: CategoryPieProps) {
   if (data.length === 0) {

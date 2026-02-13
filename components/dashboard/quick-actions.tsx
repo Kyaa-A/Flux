@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TransactionDialog } from "@/components/forms/transaction-dialog";
 

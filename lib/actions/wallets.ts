@@ -1,9 +1,11 @@
 "use server";
 
+import crypto from "crypto";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import type { WalletType } from "@/app/generated/prisma/client";
+import { walletSchema } from "@/lib/validations";
 
 /**
  * Get all wallets for the current user
@@ -64,10 +66,16 @@ export async function createWallet(data: {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
+  const validated = walletSchema.parse(data);
+
   const wallet = await prisma.wallet.create({
     data: {
-      ...data,
-      balance: data.balance || 0,
+      name: validated.name,
+      type: validated.type,
+      balance: validated.balance || 0,
+      currency: validated.currency,
+      color: validated.color,
+      icon: validated.icon,
       userId: session.user.id,
     },
   });
@@ -142,6 +150,12 @@ export async function transferBetweenWallets(
 ) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { error: "Amount must be a positive number" };
+  }
+  if (fromWalletId === toWalletId) {
+    return { error: "Source and destination wallets must be different" };
+  }
 
   // Verify both wallets belong to user
   const [fromWallet, toWallet] = await Promise.all([
@@ -156,13 +170,16 @@ export async function transferBetweenWallets(
   if (!fromWallet || !toWallet) {
     return { error: "Wallet not found" };
   }
+  if (fromWallet.isArchived || toWallet.isArchived) {
+    return { error: "Cannot transfer using archived wallets" };
+  }
 
-  // Create transfer category if doesn't exist
+  // Create system transfer category if it doesn't exist
   let transferCategory = await prisma.category.findFirst({
     where: {
       userId: session.user.id,
       name: "Transfer",
-      type: "EXPENSE",
+      type: "TRANSFER",
     },
   });
 
@@ -170,48 +187,51 @@ export async function transferBetweenWallets(
     transferCategory = await prisma.category.create({
       data: {
         name: "Transfer",
-        type: "EXPENSE",
+        type: "TRANSFER",
         color: "#64748b",
         icon: "arrow-right-left",
+        isArchived: true,
         userId: session.user.id,
       },
     });
   }
 
-  // Create expense from source wallet
-  await prisma.transaction.create({
-    data: {
-      amount,
-      type: "EXPENSE",
-      description: description || `Transfer to ${toWallet.name}`,
-      date: new Date(),
-      categoryId: transferCategory.id,
-      walletId: fromWalletId,
-      userId: session.user.id,
-    },
-  });
+  const transferGroupId = crypto.randomUUID();
 
-  // Create income to destination wallet
-  await prisma.transaction.create({
-    data: {
-      amount,
-      type: "INCOME",
-      description: description || `Transfer from ${fromWallet.name}`,
-      date: new Date(),
-      categoryId: transferCategory.id,
-      walletId: toWalletId,
-      userId: session.user.id,
-    },
-  });
-
-  // Update wallet balances
-  await Promise.all([
+  // Atomically create both transactions and update balances
+  await prisma.$transaction([
+    prisma.transaction.create({
+      data: {
+        amount,
+        type: "TRANSFER",
+        description: description || `Transfer to ${toWallet.name}`,
+        notes: "TRANSFER_OUT",
+        transferGroupId,
+        date: new Date(),
+        categoryId: transferCategory.id,
+        walletId: fromWalletId,
+        userId: session.user.id,
+      },
+    }),
+    prisma.transaction.create({
+      data: {
+        amount,
+        type: "TRANSFER",
+        description: description || `Transfer from ${fromWallet.name}`,
+        notes: "TRANSFER_IN",
+        transferGroupId,
+        date: new Date(),
+        categoryId: transferCategory.id,
+        walletId: toWalletId,
+        userId: session.user.id,
+      },
+    }),
     prisma.wallet.update({
-      where: { id: fromWalletId },
+      where: { id: fromWalletId, userId: session.user.id },
       data: { balance: { decrement: amount } },
     }),
     prisma.wallet.update({
-      where: { id: toWalletId },
+      where: { id: toWalletId, userId: session.user.id },
       data: { balance: { increment: amount } },
     }),
   ]);

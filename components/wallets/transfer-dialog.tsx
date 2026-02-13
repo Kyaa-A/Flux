@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { transferBetweenWallets } from "@/lib/actions/wallets";
@@ -73,7 +74,10 @@ export function TransferDialog({ wallets, defaultFromWallet, trigger }: Transfer
   });
 
   const isLoading = form.formState.isSubmitting;
-  const fromWalletId = form.watch("fromWalletId");
+  const fromWalletId = useWatch({
+    control: form.control,
+    name: "fromWalletId",
+  });
   const fromWallet = wallets.find((w) => w.id === fromWalletId);
 
   const onSubmit = async (data: TransferFormData) => {

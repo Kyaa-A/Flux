@@ -110,7 +110,8 @@ export function TransactionDialog({
     if (currentCategory && currentCategory.type !== transactionType) {
       form.setValue("categoryId", "");
     }
-  }, [transactionType, categories, form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactionType, categories]);
 
   // Reset/Initialize form when dialog opens
   useEffect(() => {
@@ -136,12 +137,17 @@ export function TransactionDialog({
         });
       }
     }
-  }, [open, transaction, wallets, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, transaction, wallets]);
 
   async function onSubmit(data: TransactionFormData) {
     try {
       if (isEditing && transaction) {
-        await updateTransaction(transaction.id, data);
+        const result = await updateTransaction(transaction.id, data);
+        if ("error" in result) {
+          toast.error(result.error);
+          return;
+        }
         toast.success("Transaction updated");
       } else {
         await createTransaction(data);

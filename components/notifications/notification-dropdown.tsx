@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Bell, Check, CheckCheck, Trash2, AlertTriangle, Info, AlertCircle, CheckCircle2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -61,15 +62,11 @@ export function NotificationDropdown() {
     setUnreadCount(count);
   };
 
-  useEffect(() => {
-    loadNotifications();
-  }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetching pattern
+  useEffect(() => { void loadNotifications(); }, []);
 
-  useEffect(() => {
-    if (open) {
-      loadNotifications();
-    }
-  }, [open]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetching pattern
+  useEffect(() => { if (open) void loadNotifications(); }, [open]);
 
   // Poll every 60 seconds for new notifications
   useEffect(() => {
@@ -114,7 +111,7 @@ export function NotificationDropdown() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+        <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label="Notifications">
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
             <Badge
@@ -209,6 +206,16 @@ export function NotificationDropdown() {
             </div>
           )}
         </ScrollArea>
+        <div className="border-t px-3 py-2">
+          <Button
+            asChild
+            variant="ghost"
+            className="h-8 w-full justify-center text-xs text-muted-foreground"
+            onClick={() => setOpen(false)}
+          >
+            <Link href="/notifications">View all notifications</Link>
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );

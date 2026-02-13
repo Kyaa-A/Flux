@@ -2,10 +2,10 @@ import NextAuth from "next-auth";
 import { authConfig } from "@/lib/auth.config";
 
 // Use the lightweight auth config that doesn't import Prisma
-// This ensures the middleware runs in Edge Runtime without Node.js built-ins
-export const { auth: middleware } = NextAuth(authConfig);
+// This ensures the proxy runs in Edge Runtime without Node.js built-ins
+export const { auth: proxy } = NextAuth(authConfig);
 
-export default middleware;
+export default proxy;
 
 export const config = {
   matcher: [

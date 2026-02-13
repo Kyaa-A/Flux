@@ -1,10 +1,14 @@
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
+import GitHub from "next-auth/providers/github";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/db";
 import { authConfig } from "@/lib/auth.config";
 import type { Role } from "@/app/generated/prisma/client";
+import { bootstrapUserWorkspace } from "@/lib/user-bootstrap";
+import { logAuditAction } from "@/lib/audit";
 
 // Extend the default session types
 declare module "next-auth" {
@@ -80,9 +84,52 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         };
       },
     }),
+    ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
+      ? [
+          Google({
+            clientId: process.env.AUTH_GOOGLE_ID,
+            clientSecret: process.env.AUTH_GOOGLE_SECRET,
+            allowDangerousEmailAccountLinking: true,
+          }),
+        ]
+      : []),
+    ...(process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET
+      ? [
+          GitHub({
+            clientId: process.env.AUTH_GITHUB_ID,
+            clientSecret: process.env.AUTH_GITHUB_SECRET,
+            allowDangerousEmailAccountLinking: true,
+          }),
+        ]
+      : []),
   ],
   callbacks: {
     ...authConfig.callbacks,
+    async signIn({ user, account }) {
+      if (!user.email) return false;
+
+      const dbUser = await prisma.user.findUnique({
+        where: { email: user.email },
+        select: { id: true, isActive: true, isBanned: true },
+      });
+
+      if (!dbUser || dbUser.isBanned || !dbUser.isActive) {
+        return false;
+      }
+
+      if (account?.provider && account.provider !== "credentials") {
+        await bootstrapUserWorkspace(dbUser.id);
+      }
+
+      await logAuditAction({
+        action: "AUTH_LOGIN_SUCCESS",
+        actorId: dbUser.id,
+        targetUserId: dbUser.id,
+        details: { provider: account?.provider || "credentials" },
+      });
+
+      return true;
+    },
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;

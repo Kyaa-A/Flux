@@ -4,8 +4,10 @@ import { auth } from "@/lib/auth";
 import { getSystemStats, getAllUsers } from "@/lib/rbac";
 import { AdminStats } from "@/components/admin/admin-stats";
 import { UserManagement } from "@/components/admin/user-management";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Shield, Users, Activity } from "lucide-react";
 
 export const metadata = {
@@ -94,6 +96,12 @@ export default async function AdminPage() {
         >
           {currentUser.role?.replace("_", " ")}
         </Badge>
+      </div>
+
+      <div>
+        <Button asChild variant="outline">
+          <Link href="/admin/audit-log">View Audit Log</Link>
+        </Button>
       </div>
 
       {/* System Stats */}

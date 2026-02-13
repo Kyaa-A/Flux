@@ -126,7 +126,7 @@ export function UserManagement({ users }: UserManagementProps) {
         await unbanUser(userId);
         toast.success("User unbanned");
         router.refresh();
-      } catch (error) {
+      } catch {
         toast.error("Failed to unban user");
       }
     });

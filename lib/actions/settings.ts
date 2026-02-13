@@ -4,6 +4,16 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
+import {
+  updateProfileSchema,
+  changePasswordSchema,
+  notificationPreferencesSchema,
+} from "@/lib/validations";
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  getUserNotificationPreferences,
+} from "@/lib/notifications";
+import { logAuditAction } from "@/lib/audit";
 
 /**
  * Get current user profile
@@ -47,9 +57,15 @@ export async function updateProfile(data: {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
+  const validated = updateProfileSchema.parse(data);
+
   await prisma.user.update({
     where: { id: session.user.id },
-    data,
+    data: {
+      name: validated.name,
+      currency: validated.currency,
+      locale: validated.locale,
+    },
   });
 
   revalidatePath("/settings");
@@ -66,6 +82,8 @@ export async function changePassword(data: {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
+  const validated = changePasswordSchema.parse(data);
+
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { password: true },
@@ -75,16 +93,22 @@ export async function changePassword(data: {
     return { error: "Cannot change password for OAuth accounts" };
   }
 
-  const isValid = await bcrypt.compare(data.currentPassword, user.password);
+  const isValid = await bcrypt.compare(validated.currentPassword, user.password);
   if (!isValid) {
     return { error: "Current password is incorrect" };
   }
 
-  const hashedPassword = await bcrypt.hash(data.newPassword, 12);
+  const hashedPassword = await bcrypt.hash(validated.newPassword, 12);
 
   await prisma.user.update({
     where: { id: session.user.id },
     data: { password: hashedPassword },
+  });
+
+  await logAuditAction({
+    action: "AUTH_PASSWORD_CHANGE_SUCCESS",
+    actorId: session.user.id,
+    targetUserId: session.user.id,
   });
 
   return { success: true };
@@ -109,12 +133,65 @@ export async function deleteAccount(password: string) {
     }
   }
 
+  await logAuditAction({
+    action: "AUTH_ACCOUNT_DELETE_SUCCESS",
+    actorId: session.user.id,
+    targetUserId: session.user.id,
+  });
+
   // Delete user (cascades to all related data)
   await prisma.user.delete({
     where: { id: session.user.id },
   });
 
   return { success: true };
+}
+
+/**
+ * Get notification preferences
+ */
+export async function getNotificationPreferences() {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  return getUserNotificationPreferences(session.user.id);
+}
+
+/**
+ * Update notification preferences
+ */
+export async function updateNotificationPreferences(data: {
+  budgetWarnings?: boolean;
+  budgetExceeded?: boolean;
+  recurringProcessed?: boolean;
+  adminAccountStatus?: boolean;
+  largeTransaction?: boolean;
+  largeTransactionThreshold?: number | null;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const current = await getUserNotificationPreferences(session.user.id);
+  const merged = { ...current, ...data };
+  const validated = notificationPreferencesSchema.parse(merged);
+
+  const normalizedThreshold = validated.largeTransaction
+    ? validated.largeTransactionThreshold
+    : null;
+
+  const toSave = {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    ...validated,
+    largeTransactionThreshold: normalizedThreshold,
+  };
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { notificationPrefs: toSave },
+  });
+
+  revalidatePath("/settings");
+  return { success: true, preferences: toSave };
 }
 
 /**
@@ -229,24 +306,24 @@ export async function importTransactionsCSV(rows: Array<{
       continue;
     }
 
-    await prisma.transaction.create({
-      data: {
-        amount,
-        type,
-        description: row.description || null,
-        date,
-        userId,
-        walletId,
-        categoryId,
-      },
-    });
-
-    // Update wallet balance
     const balanceChange = type === "INCOME" ? amount : -amount;
-    await prisma.wallet.update({
-      where: { id: walletId },
-      data: { balance: { increment: balanceChange } },
-    });
+    await prisma.$transaction([
+      prisma.transaction.create({
+        data: {
+          amount,
+          type,
+          description: row.description || null,
+          date,
+          userId,
+          walletId,
+          categoryId,
+        },
+      }),
+      prisma.wallet.update({
+        where: { id: walletId, userId },
+        data: { balance: { increment: balanceChange } },
+      }),
+    ]);
 
     imported++;
   }

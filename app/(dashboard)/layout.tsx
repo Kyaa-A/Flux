@@ -16,9 +16,9 @@ import {
   Settings,
   LogOut,
   Menu,
-  X,
   ChevronDown,
   Shield,
+  Bell,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -32,13 +32,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ModeToggle } from "@/components/mode-toggle";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Transactions", href: "/transactions", icon: Receipt },
+  { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Categories", href: "/categories", icon: Tag },
   { name: "Wallets", href: "/wallets", icon: Wallet },
   { name: "Budgets", href: "/budgets", icon: PiggyBank },
@@ -148,6 +149,7 @@ export default function DashboardLayout({
             size="icon"
             className="lg:hidden text-muted-foreground hover:text-foreground"
             onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
           </Button>

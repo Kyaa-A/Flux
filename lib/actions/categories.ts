@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import type { TransactionType } from "@/app/generated/prisma/client";
+import { z } from "zod";
+import { categorySchema } from "@/lib/validations";
 
 /**
  * Get all categories for the current user
@@ -45,12 +47,14 @@ export async function createCategory(data: {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
+  const validated = categorySchema.parse(data);
+
   // Check for duplicate
   const existing = await prisma.category.findFirst({
     where: {
       userId: session.user.id,
-      name: data.name,
-      type: data.type,
+      name: validated.name,
+      type: validated.type,
     },
   });
 
@@ -60,7 +64,11 @@ export async function createCategory(data: {
 
   const category = await prisma.category.create({
     data: {
-      ...data,
+      name: validated.name,
+      type: validated.type,
+      color: validated.color,
+      icon: validated.icon,
+      budgetLimit: validated.budgetLimit ?? null,
       userId: session.user.id,
     },
   });
@@ -87,9 +95,13 @@ export async function updateCategory(
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
+  const validated = categorySchema.partial().extend({
+    isArchived: z.boolean().optional(),
+  }).parse(data);
+
   const category = await prisma.category.update({
     where: { id, userId: session.user.id },
-    data,
+    data: validated,
   });
 
   revalidatePath("/categories");

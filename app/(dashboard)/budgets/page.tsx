@@ -5,7 +5,7 @@ import { getCategories } from "@/lib/actions/categories";
 import { BudgetCard } from "@/components/budgets/budget-card";
 import { BudgetDialog } from "@/components/budgets/budget-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
 

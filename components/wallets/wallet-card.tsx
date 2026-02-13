@@ -150,7 +150,7 @@ export function WalletCard({ wallet, allWallets }: WalletCardProps) {
               <Button 
                 variant="ghost" 
                 size="icon"
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
@@ -211,7 +211,7 @@ export function WalletCard({ wallet, allWallets }: WalletCardProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Wallet</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{wallet.name}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{wallet.name}&quot;? This action cannot be undone.
               {wallet.balance !== 0 && (
                 <span className="block mt-2 text-amber-500">
                   ⚠️ This wallet has a balance of {formatCurrency(wallet.balance)}.

@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Flux
 
-## Getting Started
+Flux is a personal finance tracker built with Next.js, NextAuth, Prisma, and PostgreSQL.
 
-First, run the development server:
+## Core Features
 
+- Authentication with credentials (register/login/logout), email verification, and password reset
+- Optional OAuth sign-in (Google/GitHub) with account linking by verified email
+- Route protection with auth-aware `proxy.ts` redirects
+- Wallet management with transfers and automatic balance updates
+- Transaction management with filters and recurring transaction support
+- Category management (income/expense, archive/unarchive, budget limits)
+- Budget tracking with progress/alerts
+- Notification center (in-app notifications with read/delete actions)
+- Server-side notification preferences (budget, recurring, admin account actions, large-transaction threshold)
+- Analytics dashboard and admin panel with RBAC (`USER`, `ADMIN`, `SUPER_ADMIN`)
+- Admin audit log for security/admin actions
+- Data export/import (JSON + CSV + print-to-PDF export)
+
+## Tech Stack
+
+- `Next.js 16` (App Router)
+- `React 19`
+- `NextAuth v5 beta`
+- `Prisma 7` + PostgreSQL (Neon adapter)
+- `Tailwind CSS 4` + Radix UI primitives
+
+## Local Setup
+
+1. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Create env file:
+```bash
+cp .env.example .env
+```
+Configure OAuth values and set `NEXT_PUBLIC_AUTH_*_ENABLED="true"` for providers you want visible in the UI.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Generate Prisma client and apply schema:
+```bash
+pnpm db:generate
+pnpm db:push
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. (Optional) seed development data:
+```bash
+pnpm db:seed
+```
 
-## Learn More
+5. Start development server:
+```bash
+pnpm dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `pnpm dev` - start dev server
+- `pnpm build` - prisma generate + production build
+- `pnpm lint` - run ESLint
+- `pnpm db:generate` - prisma generate
+- `pnpm db:push` - push schema to DB
+- `pnpm db:migrate` - run dev migration
+- `pnpm db:seed` - seed DB
+- `pnpm db:studio` - open Prisma Studio
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Cron Processing
 
-## Deploy on Vercel
+Recurring transactions and budget alerts are processed by:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `POST /api/cron/recurring`
+- Protected by `Authorization: Bearer <CRON_SECRET>`
+- Scheduled in `vercel.json` (daily)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Documentation
+
+- Product backlog: `docs/PRD.md`
+- Implementation status tracker: `docs/IMPLEMENTATION_TRACKER.md`

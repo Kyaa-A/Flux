@@ -1,5 +1,7 @@
 # Flux — Product Requirements Document & Task Breakdown
 
+> Note: This file is the backlog/roadmap reference. For current implementation status, see `docs/IMPLEMENTATION_TRACKER.md`.
+
 > Personal Finance Tracker — Full Feature Completion Plan
 > Last updated: 2026-02-06
 

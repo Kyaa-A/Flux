@@ -45,6 +45,7 @@ model User {
   // User preferences
   currency      String    @default("USD")
   locale        String    @default("en-US")
+  notificationPrefs Json?
   
   // Timestamps
   createdAt     DateTime  @default(now())
@@ -193,6 +194,7 @@ model Transaction {
   type        TransactionType
   description String?
   notes       String?         // Additional notes
+  transferGroupId String?     // Links paired transfer legs
   date        DateTime        @default(now())
   
   // Recurring transaction support
@@ -218,12 +220,14 @@ model Transaction {
   @@index([categoryId])
   @@index([date])
   @@index([type])
+  @@index([transferGroupId])
   @@map("transactions")
 }
 
 enum TransactionType {
   INCOME
   EXPENSE
+  TRANSFER
 }
 
 // =====================
@@ -323,6 +327,21 @@ model Notification {
   @@index([userId, isRead])
   @@index([userId, createdAt])
   @@map("notifications")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorId      String?
+  targetUserId String?
+  action       String
+  details      Json?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
 }
 
 enum NotificationType {
