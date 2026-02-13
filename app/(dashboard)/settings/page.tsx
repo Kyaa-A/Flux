@@ -1,11 +1,12 @@
 import { Suspense } from "react";
-import { getUserProfile } from "@/lib/actions/settings";
+import { getLinkedSignInMethods, getUserProfile } from "@/lib/actions/settings";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { PasswordForm } from "@/components/settings/password-form";
 import { DangerZone } from "@/components/settings/danger-zone";
 import { DataExport } from "@/components/settings/data-export";
 import { DataImport } from "@/components/settings/data-import";
 import { NotificationPreferences } from "@/components/settings/notification-preferences";
+import { LinkedSignInMethods } from "@/components/settings/linked-signin-methods";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +79,11 @@ async function ProfileInfo() {
       <ProfileForm profile={profile} />
     </div>
   );
+}
+
+async function SecurityMethodsSection() {
+  const methods = await getLinkedSignInMethods();
+  return <LinkedSignInMethods methods={methods} />;
 }
 
 function ProfileSkeleton() {
@@ -158,6 +164,9 @@ export default function SettingsPage() {
                 <PasswordForm />
               </CardContent>
             </Card>
+            <Suspense fallback={<ProfileSkeleton />}>
+              <SecurityMethodsSection />
+            </Suspense>
           </div>
         </TabsContent>
 

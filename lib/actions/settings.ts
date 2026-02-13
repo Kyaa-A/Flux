@@ -47,6 +47,37 @@ export async function getUserProfile() {
 }
 
 /**
+ * Get linked sign-in methods for current user
+ */
+export async function getLinkedSignInMethods() {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      password: true,
+      accounts: {
+        select: { provider: true },
+      },
+    },
+  });
+
+  const providers = new Set<string>();
+  if (user?.password) providers.add("credentials");
+  for (const account of user?.accounts || []) {
+    providers.add(account.provider);
+  }
+
+  return {
+    hasCredentials: providers.has("credentials"),
+    hasGoogle: providers.has("google"),
+    hasGithub: providers.has("github"),
+    providers: Array.from(providers),
+  };
+}
+
+/**
  * Update user profile
  */
 export async function updateProfile(data: {
