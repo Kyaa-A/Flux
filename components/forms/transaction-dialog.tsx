@@ -241,7 +241,11 @@ export function TransactionDialog({
                         step="0.01"
                         placeholder="0.00"
                         className="pl-7"
-                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          field.onChange(val === "" ? undefined : Number(val));
+                        }}
                       />
                     </div>
                   </FormControl>
