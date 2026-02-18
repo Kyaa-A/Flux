@@ -32,15 +32,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { 
-  MoreHorizontal, 
-  Pencil, 
-  Trash2, 
-  TrendingUp, 
+import {
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  TrendingUp,
   TrendingDown,
   ChevronLeft,
   ChevronRight,
   FileText,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -101,6 +103,46 @@ export function TransactionList({
     });
   };
 
+  const renderActions = (transaction: Transaction) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {transaction.type !== "TRANSFER" && (
+          <TransactionDialog
+            categories={categories}
+            wallets={wallets}
+            transaction={{
+              id: transaction.id,
+              amount: transaction.amount,
+              type: transaction.type,
+              description: transaction.description || "",
+              date: new Date(transaction.date),
+              categoryId: transaction.category.id,
+              walletId: transaction.wallet.id,
+            }}
+            trigger={
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+            }
+          />
+        )}
+        <DropdownMenuItem
+          className="text-destructive"
+          onClick={() => setDeleteId(transaction.id)}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   if (transactions.length === 0) {
     return (
       <Card>
@@ -124,115 +166,178 @@ export function TransactionList({
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Wallet</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell className="font-medium">
-                    {formatDate(new Date(transaction.date))}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {transaction.type === "INCOME" ? (
-                        <TrendingUp className="h-4 w-4 text-emerald-500" />
-                      ) : transaction.type === "EXPENSE" ? (
-                        <TrendingDown className="h-4 w-4 text-rose-500" />
-                      ) : (
-                        <TrendingUp className="h-4 w-4 text-indigo-500" />
+
+          {/* Mobile: card list */}
+          <div className="sm:hidden divide-y divide-border">
+            {transactions.map((transaction) => {
+              const isTransferIn = transaction.notes === "TRANSFER_IN";
+              const isIncoming =
+                transaction.type === "INCOME" ||
+                (transaction.type === "TRANSFER" && isTransferIn);
+
+              return (
+                <div
+                  key={transaction.id}
+                  className="flex items-center gap-3 px-4 py-3"
+                >
+                  {/* Icon */}
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: `${transaction.category.color}20` }}
+                  >
+                    {transaction.type === "INCOME" ? (
+                      <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    ) : transaction.type === "EXPENSE" ? (
+                      <TrendingDown className="h-4 w-4 text-rose-500" />
+                    ) : isTransferIn ? (
+                      <ArrowDownRight className="h-4 w-4 text-indigo-500" />
+                    ) : (
+                      <ArrowUpRight className="h-4 w-4 text-indigo-500" />
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium text-foreground truncate">
+                        {transaction.description || transaction.category.name}
+                      </span>
+                      {transaction.type === "TRANSFER" && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs shrink-0 text-indigo-500 border-indigo-500/40"
+                        >
+                          {isTransferIn ? "In" : "Out"}
+                        </Badge>
                       )}
-                      <span>{transaction.description || "No description"}</span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant="outline" 
-                      style={{ 
-                        borderColor: transaction.category.color,
-                        color: transaction.category.color,
-                      }}
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <Badge
+                        variant="outline"
+                        className="text-xs h-5"
+                        style={{
+                          borderColor: transaction.category.color,
+                          color: transaction.category.color,
+                        }}
+                      >
+                        {transaction.category.name}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(new Date(transaction.date))}
+                      </span>
+                      <Badge
+                        variant="secondary"
+                        className="text-xs h-5"
+                        style={{ backgroundColor: `${transaction.wallet.color}20` }}
+                      >
+                        {transaction.wallet.name}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Amount + actions */}
+                  <div className="flex flex-col items-end gap-0.5 shrink-0">
+                    <span
+                      className={`text-sm font-semibold ${
+                        isIncoming ? "text-emerald-500" : "text-rose-500"
+                      }`}
                     >
-                      {transaction.category.name}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant="secondary"
-                      style={{ backgroundColor: `${transaction.wallet.color}20` }}
-                    >
-                      {transaction.wallet.name}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className={`font-semibold ${
-                      transaction.type === "INCOME"
-                        ? "text-emerald-500"
-                        : transaction.type === "EXPENSE"
-                        ? "text-rose-500"
-                        : (transaction.notes === "TRANSFER_IN"
-                          ? "text-emerald-500"
-                          : "text-rose-500")
-                    }`}>
-                      {transaction.type === "INCOME"
-                        ? "+"
-                        : transaction.type === "EXPENSE"
-                        ? "-"
-                        : (transaction.notes === "TRANSFER_IN" ? "+" : "-")}
+                      {isIncoming ? "+" : "-"}
                       {formatCurrency(transaction.amount)}
                     </span>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {transaction.type !== "TRANSFER" && (
-                          <TransactionDialog
-                            categories={categories}
-                            wallets={wallets}
-                            transaction={{
-                              id: transaction.id,
-                              amount: transaction.amount,
-                              type: transaction.type,
-                              description: transaction.description || "",
-                              date: new Date(transaction.date),
-                              categoryId: transaction.category.id,
-                              walletId: transaction.wallet.id,
-                            }}
-                            trigger={
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                            }
-                          />
-                        )}
-                        <DropdownMenuItem 
-                          className="text-destructive"
-                          onClick={() => setDeleteId(transaction.id)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+                    {renderActions(transaction)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Wallet</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {transactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell className="font-medium">
+                      {formatDate(new Date(transaction.date))}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {transaction.type === "INCOME" ? (
+                          <TrendingUp className="h-4 w-4 text-emerald-500" />
+                        ) : transaction.type === "EXPENSE" ? (
+                          <TrendingDown className="h-4 w-4 text-rose-500" />
+                        ) : transaction.notes === "TRANSFER_IN" ? (
+                          <ArrowDownRight className="h-4 w-4 text-indigo-500" />
+                        ) : (
+                          <ArrowUpRight className="h-4 w-4 text-indigo-500" />
+                        )}
+                        <span>{transaction.description || "No description"}</span>
+                        {transaction.type === "TRANSFER" && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs text-indigo-500 border-indigo-500/40"
+                          >
+                            {transaction.notes === "TRANSFER_IN" ? "Transfer In" : "Transfer Out"}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        style={{
+                          borderColor: transaction.category.color,
+                          color: transaction.category.color,
+                        }}
+                      >
+                        {transaction.category.name}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="secondary"
+                        style={{ backgroundColor: `${transaction.wallet.color}20` }}
+                      >
+                        {transaction.wallet.name}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className={`font-semibold ${
+                        transaction.type === "INCOME"
+                          ? "text-emerald-500"
+                          : transaction.type === "EXPENSE"
+                          ? "text-rose-500"
+                          : (transaction.notes === "TRANSFER_IN"
+                            ? "text-emerald-500"
+                            : "text-rose-500")
+                      }`}>
+                        {transaction.type === "INCOME"
+                          ? "+"
+                          : transaction.type === "EXPENSE"
+                          ? "-"
+                          : (transaction.notes === "TRANSFER_IN" ? "+" : "-")}
+                        {formatCurrency(transaction.amount)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {renderActions(transaction)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
           {/* Pagination */}
           {pagination.pages > 1 && (

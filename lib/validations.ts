@@ -166,3 +166,32 @@ export const recurringTransactionSchema = z.object({
 });
 
 export type RecurringTransactionFormData = z.infer<typeof recurringTransactionSchema>;
+
+// Onboarding validation
+export const onboardingSchema = z.object({
+  currency: z.string().length(3, "Currency must be a 3-letter code"),
+  locale: z.string().min(2).max(10),
+  walletName: z.string().min(1, "Wallet name is required").max(50, "Wallet name is too long"),
+  walletType: z.enum([
+    "CASH",
+    "BANK_ACCOUNT",
+    "CREDIT_CARD",
+    "SAVINGS",
+    "INVESTMENT",
+    "EWALLET",
+    "OTHER",
+  ]),
+  walletColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format"),
+  walletBalance: z.number().min(0, "Opening balance cannot be negative"),
+  firstTransaction: z
+    .object({
+      type: z.enum(["INCOME", "EXPENSE"]),
+      amount: z.number().positive("Amount must be positive"),
+      description: z.string().max(255).optional(),
+      categoryId: z.string().min(1, "Please select a category"),
+      date: z.date(),
+    })
+    .optional(),
+});
+
+export type OnboardingFormData = z.infer<typeof onboardingSchema>;

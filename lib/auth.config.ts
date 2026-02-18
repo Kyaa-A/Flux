@@ -16,6 +16,7 @@ export const authConfig = {
         token.role = u.role;
         token.currency = u.currency;
         token.locale = u.locale;
+        token.onboardedAt = u.onboardedAt ?? null;
       }
       return token;
     },
@@ -26,6 +27,7 @@ export const authConfig = {
         s.role = token.role;
         s.currency = (token.currency as string) || "USD";
         s.locale = (token.locale as string) || "en-US";
+        s.onboardedAt = token.onboardedAt ?? null;
       }
       return session;
     },
@@ -66,8 +68,20 @@ export const authConfig = {
         );
       }
 
+      // Onboarding gate: redirect non-onboarded users to /onboarding
+      const user = auth?.user as unknown as Record<string, unknown>;
+      const onboardedAt = user?.onboardedAt;
+      if (!onboardedAt && pathname !== "/onboarding") {
+        return Response.redirect(new URL("/onboarding", nextUrl));
+      }
+
+      // Already onboarded users shouldn't revisit /onboarding
+      if (onboardedAt && pathname === "/onboarding") {
+        return Response.redirect(new URL("/dashboard", nextUrl));
+      }
+
       // Redirect non-admin users from admin routes
-      const userRole = (auth?.user as unknown as Record<string, unknown>)?.role;
+      const userRole = user?.role;
       if (
         adminRoutes.some((route) => pathname.startsWith(route)) &&
         userRole !== "ADMIN" &&

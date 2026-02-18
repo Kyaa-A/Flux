@@ -98,26 +98,31 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                       className="w-5 h-5"
                       style={{ color: transaction.category.color }}
                     />
+                  ) : transaction.notes === "TRANSFER_IN" ? (
+                    <ArrowDownRight className="w-5 h-5 text-indigo-500" />
                   ) : (
-                    <ArrowUpRight
-                      className="w-5 h-5"
-                      style={{ color: transaction.category.color }}
-                    />
+                    <ArrowUpRight className="w-5 h-5 text-indigo-500" />
                   )}
                 </div>
 
                 {/* Details */}
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-foreground">
                       {transaction.description || transaction.category.name}
                     </span>
-                    <Badge
-                      variant="outline"
-                      className="text-xs"
-                    >
-                      {transaction.wallet.name}
-                    </Badge>
+                    {transaction.type === "TRANSFER" ? (
+                      <Badge
+                        variant="outline"
+                        className="text-xs text-indigo-500 border-indigo-500/40 shrink-0"
+                      >
+                        {transaction.notes === "TRANSFER_IN" ? "Transfer In" : "Transfer Out"}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        {transaction.wallet.name}
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs text-muted-foreground">

@@ -21,12 +21,14 @@ declare module "next-auth" {
       role: Role;
       currency: string;
       locale: string;
+      onboardedAt: Date | null;
     };
   }
   interface User {
     role: Role;
     currency: string;
     locale: string;
+    onboardedAt: Date | null;
   }
 }
 
@@ -81,6 +83,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           role: user.role,
           currency: user.currency,
           locale: user.locale,
+          onboardedAt: user.onboardedAt,
         };
       },
     }),
@@ -136,18 +139,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = user.role;
         token.currency = user.currency;
         token.locale = user.locale;
+        token.onboardedAt = user.onboardedAt ?? null;
       }
       // Refresh user data when session is updated
       if (trigger === "update" && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { currency: true, locale: true, name: true, role: true },
+          select: { currency: true, locale: true, name: true, role: true, onboardedAt: true },
         });
         if (dbUser) {
           token.currency = dbUser.currency;
           token.locale = dbUser.locale;
           token.name = dbUser.name;
           token.role = dbUser.role;
+          token.onboardedAt = dbUser.onboardedAt ?? null;
         }
       }
       return token;
