@@ -40,6 +40,40 @@ export async function getRecurringTransactions() {
 }
 
 /**
+ * Get upcoming recurring templates due next
+ */
+export async function getUpcomingRecurringTransactions(limit = 5) {
+  const userId = await getAuthUserId();
+  const safeLimit = Math.max(1, Math.min(20, limit));
+
+  const recurring = await prisma.recurringTransaction.findMany({
+    where: {
+      userId,
+      isActive: true,
+      OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
+    },
+    include: {
+      category: { select: { name: true, color: true } },
+      wallet: { select: { name: true } },
+    },
+    orderBy: { nextRunDate: "asc" },
+    take: safeLimit,
+  });
+
+  return recurring.map((item) => ({
+    id: item.id,
+    description: item.description || item.category.name,
+    amount: Number(item.amount),
+    type: item.type as "INCOME" | "EXPENSE",
+    frequency: item.frequency,
+    nextRunDate: item.nextRunDate,
+    categoryName: item.category.name,
+    categoryColor: item.category.color,
+    walletName: item.wallet.name,
+  }));
+}
+
+/**
  * Create a recurring transaction
  */
 export async function createRecurringTransaction(data: {
