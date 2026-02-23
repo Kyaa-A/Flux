@@ -24,7 +24,15 @@ export async function getDashboardStats() {
   );
 
   // Current month stats
-  const [currentIncome, currentExpense, prevIncome, prevExpense, totalBalance, totalLoansOwed] =
+  const [
+    currentIncome,
+    currentExpense,
+    prevIncome,
+    prevExpense,
+    totalBalance,
+    totalLoansOwed,
+    cardLimitWallets,
+  ] =
     await Promise.all([
       prisma.transaction.aggregate({
         where: {
@@ -69,6 +77,20 @@ export async function getDashboardStats() {
         },
         _sum: { outstandingAmount: true },
       }),
+      prisma.wallet.findMany({
+        where: {
+          userId,
+          isArchived: false,
+          type: { in: ["CREDIT_CARD", "BANK_ACCOUNT"] },
+          creditLimit: { not: null },
+        },
+        select: {
+          name: true,
+          type: true,
+          creditLimit: true,
+        },
+        orderBy: { name: "asc" },
+      }),
     ]);
 
   const income = Number(currentIncome._sum.amount) || 0;
@@ -77,6 +99,14 @@ export async function getDashboardStats() {
   const prevExpenseVal = Number(prevExpense._sum.amount) || 0;
   const balance = Number(totalBalance._sum.balance) || 0;
   const loansOwed = Number(totalLoansOwed._sum.outstandingAmount) || 0;
+  const cardLimits = cardLimitWallets
+    .map((wallet) => ({
+      name: wallet.name,
+      type: wallet.type,
+      limit: Number(wallet.creditLimit) || 0,
+    }))
+    .filter((wallet) => wallet.limit > 0);
+  const totalCardLimit = cardLimits.reduce((sum, wallet) => sum + wallet.limit, 0);
 
   return {
     totalBalance: balance,
@@ -84,6 +114,8 @@ export async function getDashboardStats() {
     monthlyExpense: expense,
     monthlySavings: income - expense,
     totalLoansOwed: loansOwed,
+    totalCardLimit,
+    cardLimits,
     incomeChange: calculatePercentageChange(income, prevIncomeVal),
     expenseChange: calculatePercentageChange(expense, prevExpenseVal),
   };

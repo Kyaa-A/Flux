@@ -25,6 +25,7 @@ export async function getWallets(includeArchived = false) {
   return wallets.map((w) => ({
     ...w,
     balance: Number(w.balance),
+    creditLimit: w.creditLimit === null ? null : Number(w.creditLimit),
   }));
 }
 
@@ -49,6 +50,7 @@ export async function getWallet(id: string) {
   return {
     ...wallet,
     balance: Number(wallet.balance),
+    creditLimit: wallet.creditLimit === null ? null : Number(wallet.creditLimit),
   };
 }
 
@@ -59,6 +61,7 @@ export async function createWallet(data: {
   name: string;
   type: WalletType;
   balance?: number;
+  creditLimit?: number | null;
   currency?: string;
   color?: string;
   icon?: string;
@@ -74,6 +77,7 @@ export async function createWallet(data: {
       name: validated.name,
       type: validated.type,
       balance: validated.balance || 0,
+      creditLimit: validated.creditLimit ?? null,
       currency: validated.currency || userCurrency,
       color: validated.color,
       icon: validated.icon,
@@ -84,7 +88,11 @@ export async function createWallet(data: {
   revalidatePath("/wallets");
   revalidatePath("/dashboard");
 
-  return { ...wallet, balance: Number(wallet.balance) };
+  return {
+    ...wallet,
+    balance: Number(wallet.balance),
+    creditLimit: wallet.creditLimit === null ? null : Number(wallet.creditLimit),
+  };
 }
 
 /**
@@ -95,6 +103,7 @@ export async function updateWallet(
   data: {
     name?: string;
     type?: WalletType;
+    creditLimit?: number | null;
     color?: string;
     icon?: string;
     isArchived?: boolean;
@@ -111,7 +120,11 @@ export async function updateWallet(
   revalidatePath("/wallets");
   revalidatePath("/dashboard");
 
-  return { ...wallet, balance: Number(wallet.balance) };
+  return {
+    ...wallet,
+    balance: Number(wallet.balance),
+    creditLimit: wallet.creditLimit === null ? null : Number(wallet.creditLimit),
+  };
 }
 
 /**

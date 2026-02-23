@@ -67,6 +67,7 @@ interface WalletCardProps {
     name: string;
     type: string;
     balance: number;
+    creditLimit?: number | null;
     currency: string;
     color: string;
     icon: string;
@@ -203,6 +204,11 @@ export function WalletCard({ wallet, allWallets }: WalletCardProps) {
           <p className="text-sm text-muted-foreground mt-1">
             Current balance
           </p>
+          {wallet.creditLimit && wallet.creditLimit > 0 && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Limit: {formatAmount(wallet.creditLimit)}
+            </p>
+          )}
         </CardContent>
       </Card>
 

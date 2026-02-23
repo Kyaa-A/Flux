@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   Wallet,
-  TrendingUp,
+  CreditCard,
   TrendingDown,
   PiggyBank,
   HandCoins,
@@ -21,6 +21,12 @@ interface StatsCardsProps {
     monthlyExpense: number;
     monthlySavings: number;
     totalLoansOwed: number;
+    totalCardLimit: number;
+    cardLimits: Array<{
+      name: string;
+      type: string;
+      limit: number;
+    }>;
     incomeChange: number;
     expenseChange: number;
   };
@@ -28,6 +34,17 @@ interface StatsCardsProps {
 
 export function StatsCards({ stats }: StatsCardsProps) {
   const { formatAmount } = useCurrency();
+  const cardLimitPreview = (() => {
+    if (stats.cardLimits.length === 0) {
+      return "No credit/debit limits set yet";
+    }
+    const preview = stats.cardLimits
+      .slice(0, 2)
+      .map((wallet) => `${wallet.name}: ${formatAmount(wallet.limit)}`)
+      .join(" | ");
+    const hiddenCount = Math.max(0, stats.cardLimits.length - 2);
+    return hiddenCount > 0 ? `${preview} (+${hiddenCount} more)` : preview;
+  })();
 
   const cards = [
     {
@@ -40,15 +57,14 @@ export function StatsCards({ stats }: StatsCardsProps) {
       href: "/wallets",
     },
     {
-      title: "Monthly Income",
-      value: formatAmount(stats.monthlyIncome),
-      change: stats.incomeChange,
-      icon: TrendingUp,
+      title: "Card Limits",
+      value: formatAmount(stats.totalCardLimit),
+      subtitle: cardLimitPreview,
+      icon: CreditCard,
       gradient: "from-emerald-500 to-green-600",
       iconBg: "bg-emerald-500/20",
       iconColor: "text-emerald-500",
-      positive: true,
-      href: "/transactions?type=INCOME",
+      href: "/wallets",
     },
     {
       title: "Monthly Expenses",
@@ -136,6 +152,9 @@ export function StatsCards({ stats }: StatsCardsProps) {
                   </span>
                   <span className="text-xs text-muted-foreground">vs last month</span>
                 </div>
+              )}
+              {card.change === undefined && card.subtitle && (
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{card.subtitle}</p>
               )}
             </CardContent>
           </Card>

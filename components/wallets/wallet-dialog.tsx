@@ -45,6 +45,7 @@ const walletSchema = z.object({
     "OTHER",
   ]),
   balance: z.number().optional(),
+  creditLimit: z.number().min(0, "Credit limit cannot be negative").optional().nullable(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color"),
 });
 
@@ -79,6 +80,7 @@ interface WalletDialogProps {
     name: string;
     type: string;
     balance: number;
+    creditLimit?: number | null;
     color: string;
   };
   trigger: React.ReactNode;
@@ -94,12 +96,15 @@ export function WalletDialog({ wallet, trigger }: WalletDialogProps) {
       name: wallet?.name || "",
       type: (wallet?.type as WalletFormData["type"]) || "BANK_ACCOUNT",
       balance: wallet?.balance || 0,
+      creditLimit: wallet?.creditLimit ?? undefined,
       color: wallet?.color || COLORS[0],
     },
   });
 
   const isLoading = form.formState.isSubmitting;
   const isEditing = !!wallet;
+  const selectedType = form.watch("type");
+  const showCreditLimit = selectedType === "CREDIT_CARD" || selectedType === "BANK_ACCOUNT";
 
   const onSubmit = async (data: WalletFormData) => {
     try {
@@ -107,6 +112,7 @@ export function WalletDialog({ wallet, trigger }: WalletDialogProps) {
         await updateWallet(wallet.id, {
           name: data.name,
           type: data.type,
+          creditLimit: showCreditLimit ? (data.creditLimit ?? null) : null,
           color: data.color,
         });
         toast.success("Wallet updated");
@@ -115,6 +121,7 @@ export function WalletDialog({ wallet, trigger }: WalletDialogProps) {
           name: data.name,
           type: data.type,
           balance: data.balance || 0,
+          creditLimit: showCreditLimit ? (data.creditLimit ?? null) : null,
           color: data.color,
         });
         toast.success("Wallet created");
@@ -203,6 +210,32 @@ export function WalletDialog({ wallet, trigger }: WalletDialogProps) {
                   <FormMessage />
                 </FormItem>
               )}
+              />
+            )}
+
+            {showCreditLimit && (
+              <FormField
+                control={form.control}
+                name="creditLimit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Credit/Debit Limit</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={field.value ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          field.onChange(val === "" ? null : Number(val));
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             )}
 

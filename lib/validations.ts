@@ -44,6 +44,7 @@ export const walletSchema = z.object({
     "OTHER",
   ]),
   balance: z.number().default(0),
+  creditLimit: z.number().min(0, "Credit limit cannot be negative").max(999999999.99, "Credit limit is too large").optional().nullable(),
   currency: z.string().length(3).optional(),
   color: z
     .string()
