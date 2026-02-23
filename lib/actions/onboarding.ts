@@ -60,16 +60,10 @@ export async function completeOnboarding(data: {
   const user = await requireAuth();
 
   const validated = onboardingSchema.parse(data);
-
-  // Find the first (default) wallet to update
   const defaultWallet = await prisma.wallet.findFirst({
     where: { userId: user.id },
     orderBy: { createdAt: "asc" },
   });
-
-  if (!defaultWallet) {
-    return { error: "No wallet found" };
-  }
 
   await prisma.$transaction(async (tx) => {
     // 1. Update user preferences and mark as onboarded
@@ -82,17 +76,33 @@ export async function completeOnboarding(data: {
       },
     });
 
-    // 2. Update the default wallet
-    await tx.wallet.update({
-      where: { id: defaultWallet.id },
-      data: {
-        name: validated.walletName,
-        type: validated.walletType,
-        color: validated.walletColor,
-        currency: validated.currency,
-        balance: validated.walletBalance,
-      },
-    });
+    // 2. Update the default wallet, or create one for legacy users missing a wallet
+    let walletId: string;
+    if (!defaultWallet) {
+      const createdWallet = await tx.wallet.create({
+        data: {
+          userId: user.id,
+          name: validated.walletName,
+          type: validated.walletType,
+          color: validated.walletColor,
+          currency: validated.currency,
+          balance: validated.walletBalance,
+        },
+      });
+      walletId = createdWallet.id;
+    } else {
+      walletId = defaultWallet.id;
+      await tx.wallet.update({
+        where: { id: walletId },
+        data: {
+          name: validated.walletName,
+          type: validated.walletType,
+          color: validated.walletColor,
+          currency: validated.currency,
+          balance: validated.walletBalance,
+        },
+      });
+    }
 
     // 3. Optionally record a first transaction
     if (validated.firstTransaction) {
@@ -101,7 +111,7 @@ export async function completeOnboarding(data: {
       await tx.transaction.create({
         data: {
           userId: user.id,
-          walletId: defaultWallet.id,
+          walletId,
           categoryId: ft.categoryId,
           type: ft.type,
           amount: ft.amount,
@@ -112,7 +122,7 @@ export async function completeOnboarding(data: {
 
       // Adjust wallet balance
       await tx.wallet.update({
-        where: { id: defaultWallet.id },
+        where: { id: walletId },
         data: {
           balance: {
             increment: ft.type === "INCOME" ? ft.amount : -ft.amount,

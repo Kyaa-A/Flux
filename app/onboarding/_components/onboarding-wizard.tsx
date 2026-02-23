@@ -240,13 +240,23 @@ export function OnboardingWizard({
             : undefined,
       });
 
-      if (result && "error" in result) {
+      if (
+        result &&
+        typeof result === "object" &&
+        "error" in result &&
+        typeof result.error === "string"
+      ) {
         toast.error(result.error);
         return;
       }
 
-      await updateSession();
-      router.push("/dashboard");
+      try {
+        await updateSession();
+      } catch {
+        // Onboarding is already persisted server-side; continue navigation.
+      }
+      router.replace("/dashboard");
+      router.refresh();
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
