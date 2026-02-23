@@ -10,6 +10,7 @@ import {
 } from "@/lib/actions/dashboard";
 import { getUpcomingRecurringTransactions } from "@/lib/actions/recurring";
 import { getBudgetAlerts } from "@/lib/actions/budgets";
+import { auth } from "@/lib/auth";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { MonthlyChart } from "@/components/charts/monthly-chart";
 import { ExpenseDonut } from "@/components/charts/expense-donut";
@@ -58,12 +59,24 @@ async function StatsSection() {
   return <StatsCards stats={stats} />;
 }
 
-async function BudgetAlertsSection() {
+async function BudgetAlertsSection({
+  currency,
+  locale,
+}: {
+  currency: string;
+  locale: string;
+}) {
   const alerts = await getBudgetAlerts();
-  return <BudgetAlerts alerts={alerts} />;
+  return <BudgetAlerts alerts={alerts} currency={currency} locale={locale} />;
 }
 
-async function ChartsSection() {
+async function ChartsSection({
+  currency,
+  locale,
+}: {
+  currency: string;
+  locale: string;
+}) {
   const [monthlyData, expenseData, netWorthData] = await Promise.all([
     getMonthlyChartData(),
     getExpenseByCategory(),
@@ -82,18 +95,30 @@ async function ChartsSection() {
         <NetWorthTrend data={netWorthData} />
       </div>
       <div className="lg:col-span-3">
-        <UpcomingRecurringSection />
+        <UpcomingRecurringSection currency={currency} locale={locale} />
       </div>
     </div>
   );
 }
 
-async function UpcomingRecurringSection() {
+async function UpcomingRecurringSection({
+  currency,
+  locale,
+}: {
+  currency: string;
+  locale: string;
+}) {
   const recurring = await getUpcomingRecurringTransactions(5);
-  return <UpcomingRecurring items={recurring} />;
+  return <UpcomingRecurring items={recurring} currency={currency} locale={locale} />;
 }
 
-async function TransactionsAndTopSpendingSection() {
+async function TransactionsAndTopSpendingSection({
+  currency,
+  locale,
+}: {
+  currency: string;
+  locale: string;
+}) {
   const [transactions, expenseData] = await Promise.all([
     getRecentTransactions(8),
     getExpenseByCategory(),
@@ -105,17 +130,20 @@ async function TransactionsAndTopSpendingSection() {
         <RecentTransactions transactions={transactions} />
       </div>
       <div>
-        <TopCategories data={expenseData} />
+        <TopCategories data={expenseData} currency={currency} locale={locale} />
       </div>
     </div>
   );
 }
 
 export default async function DashboardPage() {
-  const [categories, wallets] = await Promise.all([
+  const [session, categories, wallets] = await Promise.all([
+    auth(),
     getCategories(),
     getWallets(),
   ]);
+  const currency = session?.user?.currency ?? "USD";
+  const locale = session?.user?.locale ?? "en-US";
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -137,7 +165,7 @@ export default async function DashboardPage() {
 
       {/* Budget Alerts */}
       <Suspense fallback={null}>
-        <BudgetAlertsSection />
+        <BudgetAlertsSection currency={currency} locale={locale} />
       </Suspense>
 
       {/* Charts */}
@@ -159,7 +187,7 @@ export default async function DashboardPage() {
           </div>
         }
       >
-        <ChartsSection />
+        <ChartsSection currency={currency} locale={locale} />
       </Suspense>
 
       {/* Recent Transactions */}
@@ -173,7 +201,7 @@ export default async function DashboardPage() {
           </div>
         }
       >
-        <TransactionsAndTopSpendingSection />
+        <TransactionsAndTopSpendingSection currency={currency} locale={locale} />
       </Suspense>
     </div>
   );

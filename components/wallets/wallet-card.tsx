@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { formatCurrency } from "@/lib/utils";
 import { updateWallet, deleteWallet } from "@/lib/actions/wallets";
+import { useCurrency } from "@/components/providers/currency-provider";
 import { WalletDialog } from "./wallet-dialog";
 import { TransferDialog } from "./transfer-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,6 +83,7 @@ interface WalletCardProps {
 
 export function WalletCard({ wallet, allWallets }: WalletCardProps) {
   const router = useRouter();
+  const { formatAmount } = useCurrency();
   const [isPending, startTransition] = useTransition();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -197,7 +198,7 @@ export function WalletCard({ wallet, allWallets }: WalletCardProps) {
           <div className={`text-3xl font-bold ${
             wallet.balance >= 0 ? "text-emerald-500" : "text-rose-500"
           }`}>
-            {formatCurrency(wallet.balance, wallet.currency)}
+            {formatAmount(wallet.balance)}
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             Current balance
@@ -214,7 +215,7 @@ export function WalletCard({ wallet, allWallets }: WalletCardProps) {
               Are you sure you want to delete &quot;{wallet.name}&quot;? This action cannot be undone.
               {wallet.balance !== 0 && (
                 <span className="block mt-2 text-amber-500">
-                  ⚠️ This wallet has a balance of {formatCurrency(wallet.balance)}.
+                  ⚠️ This wallet has a balance of {formatAmount(wallet.balance)}.
                 </span>
               )}
             </AlertDialogDescription>

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 import { getSavingsTrend } from "@/lib/actions/transactions";
 import { getAnalyticsStats, getCategorySpendingByRange } from "@/lib/actions/analytics";
 import { getWalletSummary, getWalletDistribution } from "@/lib/actions/wallets";
@@ -31,9 +32,13 @@ export const metadata = {
 async function OverviewCards({
   startDate,
   endDate,
+  currency,
+  locale,
 }: {
   startDate: Date;
   endDate: Date;
+  currency: string;
+  locale: string;
 }) {
   const [stats, walletSummary] = await Promise.all([
     getAnalyticsStats(startDate, endDate),
@@ -56,7 +61,7 @@ async function OverviewCards({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-emerald-500">
-            {formatCurrency(stats.totalIncome)}
+            {formatCurrency(stats.totalIncome, currency, locale)}
           </div>
         </CardContent>
       </Card>
@@ -70,7 +75,7 @@ async function OverviewCards({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-rose-500">
-            {formatCurrency(stats.totalExpense)}
+            {formatCurrency(stats.totalExpense, currency, locale)}
           </div>
         </CardContent>
       </Card>
@@ -88,7 +93,7 @@ async function OverviewCards({
               walletSummary.totalBalance >= 0 ? "text-emerald-500" : "text-rose-500"
             }`}
           >
-            {formatCurrency(walletSummary.totalBalance)}
+            {formatCurrency(walletSummary.totalBalance, currency, locale)}
           </div>
         </CardContent>
       </Card>
@@ -145,9 +150,13 @@ function CardsSkeleton() {
 async function CategoryBreakdown({
   startDate,
   endDate,
+  currency,
+  locale,
 }: {
   startDate: Date;
   endDate: Date;
+  currency: string;
+  locale: string;
 }) {
   const spending = await getCategorySpendingByRange(startDate, endDate, "EXPENSE");
   const totalSpent = spending.reduce((sum, c) => sum + c.spent, 0);
@@ -188,7 +197,7 @@ async function CategoryBreakdown({
                           {formatPercentage(percentage)}
                         </span>
                         <span className="font-semibold">
-                          {formatCurrency(category.spent)}
+                          {formatCurrency(category.spent, currency, locale)}
                         </span>
                       </div>
                     </div>
@@ -203,7 +212,7 @@ async function CategoryBreakdown({
                     </div>
                     {category.budget && (
                       <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Budget: {formatCurrency(category.budget)}</span>
+                        <span>Budget: {formatCurrency(category.budget, currency, locale)}</span>
                         <span
                           className={category.isOverBudget ? "text-rose-500" : ""}
                         >
@@ -221,7 +230,13 @@ async function CategoryBreakdown({
   );
 }
 
-async function TrendAnalysis() {
+async function TrendAnalysis({
+  currency,
+  locale,
+}: {
+  currency: string;
+  locale: string;
+}) {
   const [weekStats, monthStats, yearStats] = await Promise.all([
     getTransactionStats("week"),
     getTransactionStats("month"),
@@ -241,28 +256,28 @@ async function TrendAnalysis() {
           <div className="text-center p-4 rounded-lg bg-muted/50">
             <p className="text-sm text-muted-foreground mb-1">This Week</p>
             <p className="text-lg font-bold text-emerald-500">
-              +{formatCurrency(weekStats.totalIncome)}
+              +{formatCurrency(weekStats.totalIncome, currency, locale)}
             </p>
             <p className="text-lg font-bold text-rose-500">
-              -{formatCurrency(weekStats.totalExpense)}
+              -{formatCurrency(weekStats.totalExpense, currency, locale)}
             </p>
           </div>
           <div className="text-center p-4 rounded-lg bg-muted/50">
             <p className="text-sm text-muted-foreground mb-1">This Month</p>
             <p className="text-lg font-bold text-emerald-500">
-              +{formatCurrency(monthStats.totalIncome)}
+              +{formatCurrency(monthStats.totalIncome, currency, locale)}
             </p>
             <p className="text-lg font-bold text-rose-500">
-              -{formatCurrency(monthStats.totalExpense)}
+              -{formatCurrency(monthStats.totalExpense, currency, locale)}
             </p>
           </div>
           <div className="text-center p-4 rounded-lg bg-muted/50">
             <p className="text-sm text-muted-foreground mb-1">This Year</p>
             <p className="text-lg font-bold text-emerald-500">
-              +{formatCurrency(yearStats.totalIncome)}
+              +{formatCurrency(yearStats.totalIncome, currency, locale)}
             </p>
             <p className="text-lg font-bold text-rose-500">
-              -{formatCurrency(yearStats.totalExpense)}
+              -{formatCurrency(yearStats.totalExpense, currency, locale)}
             </p>
           </div>
         </div>
@@ -299,7 +314,9 @@ interface PageProps {
 }
 
 export default async function AnalyticsPage({ searchParams }: PageProps) {
-  const params = await searchParams;
+  const [session, params] = await Promise.all([auth(), searchParams]);
+  const currency = session?.user?.currency ?? "USD";
+  const locale = session?.user?.locale ?? "en-US";
   const now = new Date();
 
   const startDate = params.from
@@ -330,17 +347,27 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
       {/* Overview Cards */}
       <Suspense fallback={<CardsSkeleton />}>
-        <OverviewCards startDate={startDate} endDate={endDate} />
+        <OverviewCards
+          startDate={startDate}
+          endDate={endDate}
+          currency={currency}
+          locale={locale}
+        />
       </Suspense>
 
       {/* Main Analytics */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Suspense fallback={<AnalyticsSkeleton />}>
-          <CategoryBreakdown startDate={startDate} endDate={endDate} />
+          <CategoryBreakdown
+            startDate={startDate}
+            endDate={endDate}
+            currency={currency}
+            locale={locale}
+          />
         </Suspense>
 
         <Suspense fallback={<AnalyticsSkeleton />}>
-          <TrendAnalysis />
+          <TrendAnalysis currency={currency} locale={locale} />
         </Suspense>
       </div>
 

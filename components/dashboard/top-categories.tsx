@@ -9,7 +9,15 @@ interface TopCategory {
   color: string;
 }
 
-export function TopCategories({ data }: { data: TopCategory[] }) {
+export function TopCategories({
+  data,
+  currency = "USD",
+  locale = "en-US",
+}: {
+  data: TopCategory[];
+  currency?: string;
+  locale?: string;
+}) {
   const total = data.reduce((sum, c) => sum + c.value, 0);
 
   if (data.length === 0) {
@@ -53,7 +61,7 @@ export function TopCategories({ data }: { data: TopCategory[] }) {
                   />
                   <span className="font-medium">{category.name}</span>
                 </div>
-                <span className="font-semibold">{formatCurrency(category.value)}</span>
+                <span className="font-semibold">{formatCurrency(category.value, currency, locale)}</span>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div

@@ -2,7 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 interface ExpenseDonutProps {
   data: {
@@ -16,10 +16,11 @@ interface TooltipPayloadItem {
   payload: { name: string; value: number; color: string };
 }
 
-function CustomTooltip({ active, payload, total }: {
+function CustomTooltip({ active, payload, total, formatAmount }: {
   active?: boolean;
   payload?: TooltipPayloadItem[];
   total: number;
+  formatAmount: (value: number | string) => string;
 }) {
   if (active && payload && payload.length) {
     const item = payload[0].payload;
@@ -34,7 +35,7 @@ function CustomTooltip({ active, payload, total }: {
           <span className="text-foreground font-medium">{item.name}</span>
         </div>
         <div className="text-sm text-muted-foreground">
-          {formatCurrency(item.value)} ({percentage.toFixed(1)}%)
+          {formatAmount(item.value)} ({percentage.toFixed(1)}%)
         </div>
       </div>
     );
@@ -43,6 +44,7 @@ function CustomTooltip({ active, payload, total }: {
 }
 
 export function ExpenseDonut({ data }: ExpenseDonutProps) {
+  const { formatAmount } = useCurrency();
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
   if (data.length === 0) {
@@ -83,7 +85,7 @@ export function ExpenseDonut({ data }: ExpenseDonutProps) {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip content={<CustomTooltip total={total} />} />
+              <Tooltip content={<CustomTooltip total={total} formatAmount={formatAmount} />} />
             </PieChart>
           </ResponsiveContainer>
         </div>

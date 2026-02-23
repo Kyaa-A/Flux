@@ -14,9 +14,11 @@ interface BudgetAlert {
 
 interface BudgetAlertsProps {
   alerts: BudgetAlert[];
+  currency?: string;
+  locale?: string;
 }
 
-export function BudgetAlerts({ alerts }: BudgetAlertsProps) {
+export function BudgetAlerts({ alerts, currency = "USD", locale = "en-US" }: BudgetAlertsProps) {
   if (alerts.length === 0) return null;
 
   return (
@@ -38,7 +40,7 @@ export function BudgetAlerts({ alerts }: BudgetAlertsProps) {
               <div>
                 <p className="text-sm font-medium text-foreground">{alert.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {formatCurrency(alert.spent)} / {formatCurrency(alert.amount)}
+                  {formatCurrency(alert.spent, currency, locale)} / {formatCurrency(alert.amount, currency, locale)}
                 </p>
               </div>
               <div className="flex items-center gap-2">

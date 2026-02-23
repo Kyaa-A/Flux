@@ -11,7 +11,8 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCompactCurrency, formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 interface SavingsData {
   month: string;
@@ -20,6 +21,8 @@ interface SavingsData {
 }
 
 export function SavingsTrend({ data }: { data: SavingsData[] }) {
+  const { currency, locale } = useCurrency();
+
   if (data.length === 0) {
     return (
       <Card>
@@ -66,11 +69,11 @@ export function SavingsTrend({ data }: { data: SavingsData[] }) {
               className="text-xs fill-muted-foreground"
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={(value) => formatCompactCurrency(Number(value), currency, locale)}
             />
             <Tooltip
               formatter={(value, name) => [
-                formatCurrency(Number(value)),
+                formatCurrency(Number(value), currency, locale),
                 name === "cumulative" ? "Cumulative Savings" : "Monthly Savings",
               ]}
               contentStyle={{

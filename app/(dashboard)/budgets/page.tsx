@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { Plus, Target } from "lucide-react";
+import { auth } from "@/lib/auth";
 import { getBudgets } from "@/lib/actions/budgets";
 import { getCategories } from "@/lib/actions/categories";
 import { BudgetCard } from "@/components/budgets/budget-card";
@@ -43,7 +44,13 @@ function BudgetsSkeleton() {
   );
 }
 
-async function BudgetsContent() {
+async function BudgetsContent({
+  currency,
+  locale,
+}: {
+  currency: string;
+  locale: string;
+}) {
   const [budgets, categories] = await Promise.all([
     getBudgets(),
     getCategories("EXPENSE"),
@@ -68,20 +75,20 @@ async function BudgetsContent() {
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Total Budgeted</p>
-            <p className="text-2xl font-bold text-foreground">{formatCurrency(totalBudgeted)}</p>
+            <p className="text-2xl font-bold text-foreground">{formatCurrency(totalBudgeted, currency, locale)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Total Spent</p>
-            <p className="text-2xl font-bold text-foreground">{formatCurrency(totalSpent)}</p>
+            <p className="text-2xl font-bold text-foreground">{formatCurrency(totalSpent, currency, locale)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Remaining</p>
             <p className={`text-2xl font-bold ${totalRemaining >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
-              {formatCurrency(totalRemaining)}
+              {formatCurrency(totalRemaining, currency, locale)}
             </p>
           </CardContent>
         </Card>
@@ -121,7 +128,9 @@ async function BudgetsContent() {
 }
 
 export default async function BudgetsPage() {
-  const categories = await getCategories("EXPENSE");
+  const [session, categories] = await Promise.all([auth(), getCategories("EXPENSE")]);
+  const currency = session?.user?.currency ?? "USD";
+  const locale = session?.user?.locale ?? "en-US";
   const allCategories = categories.map((c) => ({
     id: c.id,
     name: c.name,
@@ -150,7 +159,7 @@ export default async function BudgetsPage() {
       </div>
 
       <Suspense fallback={<BudgetsSkeleton />}>
-        <BudgetsContent />
+        <BudgetsContent currency={currency} locale={locale} />
       </Suspense>
     </div>
   );

@@ -1,6 +1,7 @@
 import { Plus, HandCoins, Wallet, CircleDollarSign, AlertTriangle } from "lucide-react";
 
 import { getLoans, getLoanSummary } from "@/lib/actions/loans";
+import { auth } from "@/lib/auth";
 import { LoanDialog } from "@/components/loans/loan-dialog";
 import { LoanCard } from "@/components/loans/loan-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +14,9 @@ export const metadata = {
 };
 
 export default async function LoansPage() {
-  const [summary, loans] = await Promise.all([getLoanSummary(), getLoans()]);
+  const [session, summary, loans] = await Promise.all([auth(), getLoanSummary(), getLoans()]);
+  const currency = session?.user?.currency ?? "USD";
+  const locale = session?.user?.locale ?? "en-US";
 
   return (
     <div className="space-y-6">
@@ -43,7 +46,7 @@ export default async function LoansPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">
-              {formatCurrency(summary.totalOutstanding)}
+              {formatCurrency(summary.totalOutstanding, currency, locale)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               {summary.activeLoans} active loan{summary.activeLoans !== 1 ? "s" : ""}
@@ -58,7 +61,7 @@ export default async function LoansPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              {formatCurrency(summary.totalCollected)}
+              {formatCurrency(summary.totalCollected, currency, locale)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">Paid back so far</p>
           </CardContent>
@@ -70,7 +73,7 @@ export default async function LoansPage() {
             <Wallet className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(summary.totalPrincipal)}</p>
+            <p className="text-2xl font-bold">{formatCurrency(summary.totalPrincipal, currency, locale)}</p>
             <p className="text-xs text-muted-foreground mt-1">
               {summary.totalLoans} total loan{summary.totalLoans !== 1 ? "s" : ""}
             </p>

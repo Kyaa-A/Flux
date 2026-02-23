@@ -2,6 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 interface CategoryData {
   name: string;
@@ -18,16 +19,17 @@ interface TooltipPayloadItem {
   value: number;
 }
 
-function CustomTooltip({ active, payload }: {
+function CustomTooltip({ active, payload, formatAmount }: {
   active?: boolean;
   payload?: TooltipPayloadItem[];
+  formatAmount: (value: number | string) => string;
 }) {
   if (active && payload && payload.length) {
     return (
       <div className="bg-popover border border-border p-2 rounded-lg shadow-xl">
         <p className="text-sm font-medium">{payload[0].name}</p>
         <p className="text-sm text-emerald-500">
-          {formatCurrency(payload[0].value)}
+          {formatAmount(payload[0].value)}
         </p>
       </div>
     );
@@ -36,6 +38,8 @@ function CustomTooltip({ active, payload }: {
 }
 
 export function CategoryPie({ data }: CategoryPieProps) {
+  const { currency, locale } = useCurrency();
+
   if (data.length === 0) {
     return (
       <div className="h-[300px] flex items-center justify-center text-muted-foreground">
@@ -61,7 +65,13 @@ export function CategoryPie({ data }: CategoryPieProps) {
               <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
             ))}
           </Pie>
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip
+            content={
+              <CustomTooltip
+                formatAmount={(value) => formatCurrency(Number(value), currency, locale)}
+              />
+            }
+          />
           <Legend
             layout="vertical"
             verticalAlign="middle"

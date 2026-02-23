@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CategoryDialog } from "./category-dialog";
 import { deleteCategory, updateCategory } from "@/lib/actions/categories";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 interface CategoryCardProps {
   category: {
@@ -47,6 +47,7 @@ interface CategoryCardProps {
 
 export function CategoryCard({ category, spent = 0 }: CategoryCardProps) {
   const router = useRouter();
+  const { formatAmount } = useCurrency();
   const [isPending, startTransition] = useTransition();
   const [showDelete, setShowDelete] = useState(false);
 
@@ -147,7 +148,7 @@ export function CategoryCard({ category, spent = 0 }: CategoryCardProps) {
             <div className="mt-3">
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className="text-muted-foreground">
-                  {formatCurrency(spent)} / {formatCurrency(category.budgetLimit)}
+                  {formatAmount(spent)} / {formatAmount(category.budgetLimit)}
                 </span>
                 <span className={budgetPercent! > 100 ? "text-destructive font-medium" : "text-muted-foreground"}>
                   {budgetPercent!.toFixed(0)}%

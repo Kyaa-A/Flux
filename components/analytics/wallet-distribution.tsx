@@ -11,6 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 interface WalletData {
   name: string;
@@ -19,6 +20,7 @@ interface WalletData {
 }
 
 export function WalletDistribution({ data }: { data: WalletData[] }) {
+  const { currency, locale } = useCurrency();
   const positiveWallets = data.filter((w) => w.balance > 0);
 
   if (positiveWallets.length === 0) {
@@ -65,7 +67,7 @@ export function WalletDistribution({ data }: { data: WalletData[] }) {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value) => formatCurrency(Number(value))}
+              formatter={(value) => formatCurrency(Number(value), currency, locale)}
               contentStyle={{
                 borderRadius: "8px",
                 border: "1px solid hsl(var(--border))",

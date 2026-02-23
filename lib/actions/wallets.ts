@@ -67,13 +67,14 @@ export async function createWallet(data: {
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   const validated = walletSchema.parse(data);
+  const userCurrency = session.user.currency || "USD";
 
   const wallet = await prisma.wallet.create({
     data: {
       name: validated.name,
       type: validated.type,
       balance: validated.balance || 0,
-      currency: validated.currency,
+      currency: validated.currency || userCurrency,
       color: validated.color,
       icon: validated.icon,
       userId: session.user.id,

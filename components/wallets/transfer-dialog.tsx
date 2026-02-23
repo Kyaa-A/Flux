@@ -7,7 +7,7 @@ import { useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { transferBetweenWallets } from "@/lib/actions/wallets";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/currency-provider";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +62,7 @@ interface TransferDialogProps {
 export function TransferDialog({ wallets, defaultFromWallet, trigger }: TransferDialogProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const { formatAmount } = useCurrency();
 
   const form = useForm<TransferFormData>({
     resolver: zodResolver(transferSchema),
@@ -194,7 +195,7 @@ export function TransferDialog({ wallets, defaultFromWallet, trigger }: Transfer
 
             {fromWallet && (
               <p className="text-sm text-muted-foreground">
-                Available: {formatCurrency(fromWallet.balance)}
+                Available: {formatAmount(fromWallet.balance)}
               </p>
             )}
 

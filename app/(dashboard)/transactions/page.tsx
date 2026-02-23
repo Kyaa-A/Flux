@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { auth } from "@/lib/auth";
 import { getTransactions, getTransactionStats } from "@/lib/actions/transactions";
 import { getCategories } from "@/lib/actions/categories";
 import { getWallets } from "@/lib/actions/wallets";
@@ -15,7 +16,13 @@ export const metadata = {
   description: "Manage your income, expenses, and transfers",
 };
 
-async function TransactionStats() {
+async function TransactionStats({
+  currency,
+  locale,
+}: {
+  currency: string;
+  locale: string;
+}) {
   const stats = await getTransactionStats("month");
   
   return (
@@ -29,7 +36,7 @@ async function TransactionStats() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-emerald-500">
-            {formatCurrency(stats.totalIncome)}
+            {formatCurrency(stats.totalIncome, currency, locale)}
           </div>
         </CardContent>
       </Card>
@@ -43,7 +50,7 @@ async function TransactionStats() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-rose-500">
-            {formatCurrency(stats.totalExpense)}
+            {formatCurrency(stats.totalExpense, currency, locale)}
           </div>
         </CardContent>
       </Card>
@@ -61,7 +68,7 @@ async function TransactionStats() {
               ? "text-emerald-500" 
               : "text-rose-500"
           }`}>
-            {formatCurrency(stats.totalIncome - stats.totalExpense)}
+            {formatCurrency(stats.totalIncome - stats.totalExpense, currency, locale)}
           </div>
         </CardContent>
       </Card>
@@ -97,6 +104,9 @@ export default async function TransactionsPage({
     search?: string;
   }>;
 }) {
+  const session = await auth();
+  const currency = session?.user?.currency ?? "USD";
+  const locale = session?.user?.locale ?? "en-US";
   const params = await searchParams;
   const page = parseInt(params.page || "1");
   const type = params.type as "INCOME" | "EXPENSE" | "TRANSFER" | "all" | undefined;
@@ -138,7 +148,7 @@ export default async function TransactionsPage({
 
       {/* Stats Overview */}
       <Suspense fallback={<StatsSkeleton />}>
-        <TransactionStats />
+        <TransactionStats currency={currency} locale={locale} />
       </Suspense>
 
       {/* Filters */}

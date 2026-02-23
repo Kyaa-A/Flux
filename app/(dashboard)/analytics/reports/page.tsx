@@ -1,4 +1,5 @@
 import { getMonthlyReport } from "@/lib/actions/analytics";
+import { auth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, DollarSign, Target, ArrowLeft } from "lucide-react";
@@ -19,7 +20,9 @@ interface PageProps {
 }
 
 export default async function ReportsPage({ searchParams }: PageProps) {
-  const params = await searchParams;
+  const [session, params] = await Promise.all([auth(), searchParams]);
+  const currency = session?.user?.currency ?? "USD";
+  const locale = session?.user?.locale ?? "en-US";
   const currentYear = new Date().getFullYear();
   const year = params.year ? parseInt(params.year, 10) : currentYear;
   const validYear = isNaN(year) ? currentYear : year;
@@ -73,7 +76,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-500">
-              {formatCurrency(totals.income)}
+              {formatCurrency(totals.income, currency, locale)}
             </div>
           </CardContent>
         </Card>
@@ -87,7 +90,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-rose-500">
-              {formatCurrency(totals.expense)}
+              {formatCurrency(totals.expense, currency, locale)}
             </div>
           </CardContent>
         </Card>
@@ -101,7 +104,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${totals.net >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
-              {formatCurrency(totals.net)}
+              {formatCurrency(totals.net, currency, locale)}
             </div>
           </CardContent>
         </Card>
@@ -152,17 +155,17 @@ export default async function ReportsPage({ searchParams }: PageProps) {
                   >
                     <td className="px-6 py-3 font-medium">{row.month}</td>
                     <td className="px-6 py-3 text-right text-emerald-500">
-                      {row.income > 0 ? formatCurrency(row.income) : "—"}
+                      {row.income > 0 ? formatCurrency(row.income, currency, locale) : "—"}
                     </td>
                     <td className="px-6 py-3 text-right text-rose-500">
-                      {row.expense > 0 ? formatCurrency(row.expense) : "—"}
+                      {row.expense > 0 ? formatCurrency(row.expense, currency, locale) : "—"}
                     </td>
                     <td className={`px-6 py-3 text-right font-semibold ${
                       row.net > 0 ? "text-emerald-500"
                       : row.net < 0 ? "text-rose-500"
                       : "text-muted-foreground"
                     }`}>
-                      {row.income === 0 && row.expense === 0 ? "—" : formatCurrency(row.net)}
+                      {row.income === 0 && row.expense === 0 ? "—" : formatCurrency(row.net, currency, locale)}
                     </td>
                     <td className={`px-6 py-3 text-right ${
                       row.income === 0 ? "text-muted-foreground"
@@ -179,13 +182,13 @@ export default async function ReportsPage({ searchParams }: PageProps) {
                 <tr className="border-t-2 bg-muted/30 font-semibold">
                   <td className="px-6 py-3">Total</td>
                   <td className="px-6 py-3 text-right text-emerald-500">
-                    {formatCurrency(totals.income)}
+                    {formatCurrency(totals.income, currency, locale)}
                   </td>
                   <td className="px-6 py-3 text-right text-rose-500">
-                    {formatCurrency(totals.expense)}
+                    {formatCurrency(totals.expense, currency, locale)}
                   </td>
                   <td className={`px-6 py-3 text-right ${totals.net >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
-                    {formatCurrency(totals.net)}
+                    {formatCurrency(totals.net, currency, locale)}
                   </td>
                   <td className={`px-6 py-3 text-right ${
                     totals.savingsRate >= 20 ? "text-emerald-500"

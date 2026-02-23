@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { deleteTransaction } from "@/lib/actions/transactions";
+import { useCurrency } from "@/components/providers/currency-provider";
 import { TransactionDialog } from "@/components/forms/transaction-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,6 +76,7 @@ export function TransactionList({
   pagination,
 }: TransactionListProps) {
   const router = useRouter();
+  const { formatAmount } = useCurrency();
   const [isPending, startTransition] = useTransition();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -243,7 +245,7 @@ export function TransactionList({
                       }`}
                     >
                       {isIncoming ? "+" : "-"}
-                      {formatCurrency(transaction.amount)}
+                      {formatAmount(transaction.amount)}
                     </span>
                     {renderActions(transaction)}
                   </div>
@@ -327,7 +329,7 @@ export function TransactionList({
                           : transaction.type === "EXPENSE"
                           ? "-"
                           : (transaction.notes === "TRANSFER_IN" ? "+" : "-")}
-                        {formatCurrency(transaction.amount)}
+                        {formatAmount(transaction.amount)}
                       </span>
                     </TableCell>
                     <TableCell>

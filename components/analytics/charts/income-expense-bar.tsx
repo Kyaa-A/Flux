@@ -1,7 +1,8 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { formatCurrency } from "@/lib/utils";
+import { formatCompactCurrency, formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 interface IncomeExpenseData {
   name: string;
@@ -17,20 +18,21 @@ interface TooltipPayloadItem {
   value: number;
 }
 
-function CustomTooltip({ active, payload, label }: {
+function CustomTooltip({ active, payload, label, formatAmount }: {
   active?: boolean;
   payload?: TooltipPayloadItem[];
   label?: string;
+  formatAmount: (value: number | string) => string;
 }) {
   if (active && payload && payload.length) {
     return (
       <div className="bg-popover border border-border p-2 rounded-lg shadow-xl">
         <p className="text-sm font-medium mb-2">{label}</p>
         <p className="text-sm text-emerald-500">
-          Income: {formatCurrency(payload[0].value)}
+          Income: {formatAmount(payload[0].value)}
         </p>
         <p className="text-sm text-rose-500">
-          Expense: {formatCurrency(payload[1].value)}
+          Expense: {formatAmount(payload[1].value)}
         </p>
       </div>
     );
@@ -39,6 +41,8 @@ function CustomTooltip({ active, payload, label }: {
 }
 
 export function IncomeExpenseBar({ data }: IncomeExpenseBarProps) {
+  const { currency, locale } = useCurrency();
+
   if (data.length === 0) {
     return (
       <div className="h-[300px] flex items-center justify-center text-muted-foreground">
@@ -65,9 +69,16 @@ export function IncomeExpenseBar({ data }: IncomeExpenseBarProps) {
             className="text-xs fill-muted-foreground"
             tickLine={false}
             axisLine={false}
-            tickFormatter={(value) => `$${value}`}
+            tickFormatter={(value) => formatCompactCurrency(Number(value), currency, locale)}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+          <Tooltip
+            content={
+              <CustomTooltip
+                formatAmount={(value) => formatCurrency(Number(value), currency, locale)}
+              />
+            }
+            cursor={{ fill: 'transparent' }}
+          />
           <Legend />
           <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
           <Bar dataKey="expense" name="Expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />

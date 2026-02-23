@@ -84,22 +84,40 @@ export async function updateProfile(data: {
   name?: string;
   currency?: string;
   locale?: string;
+  image?: string | null;
 }) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   const validated = updateProfileSchema.parse(data);
 
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: {
-      name: validated.name,
-      currency: validated.currency,
-      locale: validated.locale,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: session.user.id },
+      data: {
+        name: validated.name,
+        currency: validated.currency,
+        locale: validated.locale,
+        image: validated.image,
+      },
+    });
+
+    // Keep wallet currency labels consistent with profile default currency.
+    if (validated.currency) {
+      await tx.wallet.updateMany({
+        where: { userId: session.user.id },
+        data: { currency: validated.currency },
+      });
+    }
   });
 
   revalidatePath("/settings");
+  revalidatePath("/dashboard");
+  revalidatePath("/transactions");
+  revalidatePath("/wallets");
+  revalidatePath("/analytics");
+  revalidatePath("/budgets");
+  revalidatePath("/loans");
   return { success: true };
 }
 

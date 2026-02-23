@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCompactCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 interface MonthlyChartProps {
   data: {
@@ -27,10 +28,12 @@ interface TooltipPayloadItem {
   color: string;
 }
 
-function CustomTooltip({ active, payload, label }: {
+function CustomTooltip({ active, payload, label, currency, locale }: {
   active?: boolean;
   payload?: TooltipPayloadItem[];
   label?: string;
+  currency: string;
+  locale: string;
 }) {
   if (active && payload && payload.length) {
     return (
@@ -44,7 +47,7 @@ function CustomTooltip({ active, payload, label }: {
             />
             <span className="text-muted-foreground">{entry.name}:</span>
             <span className="text-foreground font-medium">
-              {formatCompactCurrency(entry.value)}
+              {formatCompactCurrency(entry.value, currency, locale)}
             </span>
           </div>
         ))}
@@ -55,6 +58,8 @@ function CustomTooltip({ active, payload, label }: {
 }
 
 export function MonthlyChart({ data }: MonthlyChartProps) {
+  const { currency, locale } = useCurrency();
+
   return (
     <Card>
       <CardHeader>
@@ -88,9 +93,9 @@ export function MonthlyChart({ data }: MonthlyChartProps) {
                 axisLine={false}
                 tickLine={false}
                 className="text-xs fill-muted-foreground"
-                tickFormatter={(value) => formatCompactCurrency(value)}
+                tickFormatter={(value) => formatCompactCurrency(value, currency, locale)}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip currency={currency} locale={locale} />} />
               <Legend
                 iconType="circle"
                 wrapperStyle={{ paddingTop: "20px" }}

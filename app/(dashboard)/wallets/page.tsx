@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { getWallets, getWalletSummary } from "@/lib/actions/wallets";
+import { auth } from "@/lib/auth";
 import { WalletCard } from "@/components/wallets/wallet-card";
 import { WalletDialog } from "@/components/wallets/wallet-dialog";
 import { TransferDialog } from "@/components/wallets/transfer-dialog";
@@ -13,7 +14,13 @@ export const metadata = {
   description: "Manage your wallets and accounts",
 };
 
-async function WalletSummary() {
+async function WalletSummary({
+  currency,
+  locale,
+}: {
+  currency: string;
+  locale: string;
+}) {
   const summary = await getWalletSummary();
   
   return (
@@ -29,7 +36,7 @@ async function WalletSummary() {
           <div className={`text-2xl font-bold ${
             summary.totalBalance >= 0 ? "text-emerald-500" : "text-rose-500"
           }`}>
-            {formatCurrency(summary.totalBalance)}
+            {formatCurrency(summary.totalBalance, currency, locale)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             {summary.walletCount} active wallet{summary.walletCount !== 1 ? "s" : ""}
@@ -46,7 +53,7 @@ async function WalletSummary() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-emerald-500">
-            {formatCurrency(summary.totalAssets)}
+            {formatCurrency(summary.totalAssets, currency, locale)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             Cash, bank, savings
@@ -63,7 +70,7 @@ async function WalletSummary() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-rose-500">
-            {formatCurrency(summary.totalLiabilities)}
+            {formatCurrency(summary.totalLiabilities, currency, locale)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             Credit cards, loans
@@ -159,7 +166,9 @@ function WalletGridSkeleton() {
 }
 
 export default async function WalletsPage() {
-  const wallets = await getWallets();
+  const [session, wallets] = await Promise.all([auth(), getWallets()]);
+  const currency = session?.user?.currency ?? "USD";
+  const locale = session?.user?.locale ?? "en-US";
   
   return (
     <div className="space-y-6">
@@ -201,7 +210,7 @@ export default async function WalletsPage() {
 
       {/* Summary Cards */}
       <Suspense fallback={<SummarySkeleton />}>
-        <WalletSummary />
+        <WalletSummary currency={currency} locale={locale} />
       </Suspense>
 
       {/* Wallet Grid */}
