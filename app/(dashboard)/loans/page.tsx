@@ -19,10 +19,10 @@ export default async function LoansPage() {
   const locale = session?.user?.locale ?? "en-US";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Loans</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Loans</h1>
           <p className="text-muted-foreground mt-1">
             Track people who borrowed money from you and repayment progress.
           </p>
@@ -38,14 +38,14 @@ export default async function LoansPage() {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-muted-foreground">Outstanding</CardTitle>
             <HandCoins className="h-4 w-4 text-rose-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">
+            <p className="text-lg sm:text-2xl font-bold text-rose-600 dark:text-rose-400">
               {formatCurrency(summary.totalOutstanding, currency, locale)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -60,7 +60,7 @@ export default async function LoansPage() {
             <CircleDollarSign className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            <p className="text-lg sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               {formatCurrency(summary.totalCollected, currency, locale)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">Paid back so far</p>
@@ -73,7 +73,7 @@ export default async function LoansPage() {
             <Wallet className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(summary.totalPrincipal, currency, locale)}</p>
+            <p className="text-lg sm:text-2xl font-bold">{formatCurrency(summary.totalPrincipal, currency, locale)}</p>
             <p className="text-xs text-muted-foreground mt-1">
               {summary.totalLoans} total loan{summary.totalLoans !== 1 ? "s" : ""}
             </p>
@@ -86,7 +86,7 @@ export default async function LoansPage() {
             <AlertTriangle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{summary.overdueLoans}</p>
+            <p className="text-lg sm:text-2xl font-bold">{summary.overdueLoans}</p>
             <p className="text-xs text-muted-foreground mt-1">Needs follow-up</p>
           </CardContent>
         </Card>
@@ -113,7 +113,7 @@ export default async function LoansPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4">
           {loans.map((loan) => (
             <LoanCard key={loan.id} loan={loan} />
           ))}

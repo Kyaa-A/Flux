@@ -32,7 +32,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
   const yearOptions = [currentYear, currentYear - 1, currentYear - 2];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -43,7 +43,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Monthly Reports</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Monthly Reports</h1>
             <p className="text-muted-foreground">
               12-month profit & loss for {validYear}
             </p>
@@ -66,7 +66,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
       </div>
 
       {/* Summary cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -75,7 +75,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
             <TrendingUp className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-500">
+            <div className="text-lg sm:text-2xl font-bold text-emerald-500">
               {formatCurrency(totals.income, currency, locale)}
             </div>
           </CardContent>
@@ -89,7 +89,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
             <TrendingDown className="h-4 w-4 text-rose-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-rose-500">
+            <div className="text-lg sm:text-2xl font-bold text-rose-500">
               {formatCurrency(totals.expense, currency, locale)}
             </div>
           </CardContent>
@@ -103,7 +103,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
             <DollarSign className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${totals.net >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+            <div className={`text-lg sm:text-2xl font-bold ${totals.net >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
               {formatCurrency(totals.net, currency, locale)}
             </div>
           </CardContent>
@@ -117,7 +117,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
             <Target className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${
+            <div className={`text-lg sm:text-2xl font-bold ${
               totals.savingsRate >= 20 ? "text-emerald-500"
               : totals.savingsRate >= 0 ? "text-amber-500"
               : "text-rose-500"
@@ -138,11 +138,11 @@ export default async function ReportsPage({ searchParams }: PageProps) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="text-left font-medium text-muted-foreground px-6 py-3">Month</th>
-                  <th className="text-right font-medium text-muted-foreground px-6 py-3">Income</th>
-                  <th className="text-right font-medium text-muted-foreground px-6 py-3">Expenses</th>
-                  <th className="text-right font-medium text-muted-foreground px-6 py-3">Net</th>
-                  <th className="text-right font-medium text-muted-foreground px-6 py-3">Savings Rate</th>
+                  <th className="text-left font-medium text-muted-foreground px-3 sm:px-6 py-3">Month</th>
+                  <th className="text-right font-medium text-muted-foreground px-3 sm:px-6 py-3">Income</th>
+                  <th className="text-right font-medium text-muted-foreground px-3 sm:px-6 py-3">Expenses</th>
+                  <th className="text-right font-medium text-muted-foreground px-3 sm:px-6 py-3">Net</th>
+                  <th className="text-right font-medium text-muted-foreground px-3 sm:px-6 py-3">Savings Rate</th>
                 </tr>
               </thead>
               <tbody>
@@ -153,21 +153,21 @@ export default async function ReportsPage({ searchParams }: PageProps) {
                       idx % 2 === 0 ? "" : "bg-muted/10"
                     }`}
                   >
-                    <td className="px-6 py-3 font-medium">{row.month}</td>
-                    <td className="px-6 py-3 text-right text-emerald-500">
+                    <td className="px-3 sm:px-6 py-3 font-medium">{row.month}</td>
+                    <td className="px-3 sm:px-6 py-3 text-right text-emerald-500">
                       {row.income > 0 ? formatCurrency(row.income, currency, locale) : "—"}
                     </td>
-                    <td className="px-6 py-3 text-right text-rose-500">
+                    <td className="px-3 sm:px-6 py-3 text-right text-rose-500">
                       {row.expense > 0 ? formatCurrency(row.expense, currency, locale) : "—"}
                     </td>
-                    <td className={`px-6 py-3 text-right font-semibold ${
+                    <td className={`px-3 sm:px-6 py-3 text-right font-semibold ${
                       row.net > 0 ? "text-emerald-500"
                       : row.net < 0 ? "text-rose-500"
                       : "text-muted-foreground"
                     }`}>
                       {row.income === 0 && row.expense === 0 ? "—" : formatCurrency(row.net, currency, locale)}
                     </td>
-                    <td className={`px-6 py-3 text-right ${
+                    <td className={`px-3 sm:px-6 py-3 text-right ${
                       row.income === 0 ? "text-muted-foreground"
                       : row.savingsRate >= 20 ? "text-emerald-500"
                       : row.savingsRate >= 0 ? "text-amber-500"
@@ -180,17 +180,17 @@ export default async function ReportsPage({ searchParams }: PageProps) {
               </tbody>
               <tfoot>
                 <tr className="border-t-2 bg-muted/30 font-semibold">
-                  <td className="px-6 py-3">Total</td>
-                  <td className="px-6 py-3 text-right text-emerald-500">
+                  <td className="px-3 sm:px-6 py-3">Total</td>
+                  <td className="px-3 sm:px-6 py-3 text-right text-emerald-500">
                     {formatCurrency(totals.income, currency, locale)}
                   </td>
-                  <td className="px-6 py-3 text-right text-rose-500">
+                  <td className="px-3 sm:px-6 py-3 text-right text-rose-500">
                     {formatCurrency(totals.expense, currency, locale)}
                   </td>
-                  <td className={`px-6 py-3 text-right ${totals.net >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                  <td className={`px-3 sm:px-6 py-3 text-right ${totals.net >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
                     {formatCurrency(totals.net, currency, locale)}
                   </td>
-                  <td className={`px-6 py-3 text-right ${
+                  <td className={`px-3 sm:px-6 py-3 text-right ${
                     totals.savingsRate >= 20 ? "text-emerald-500"
                     : totals.savingsRate >= 0 ? "text-amber-500"
                     : "text-rose-500"

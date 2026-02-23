@@ -23,7 +23,7 @@ export function NetWorthTrend({ data }: NetWorthTrendProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Net Worth Trend (6 Months)</CardTitle>
+        <CardTitle className="text-sm sm:text-base">Net Worth Trend (6 Months)</CardTitle>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
@@ -31,7 +31,7 @@ export function NetWorthTrend({ data }: NetWorthTrendProps) {
             No data available yet
           </p>
         ) : (
-          <div className="h-64">
+          <div className="h-52 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />

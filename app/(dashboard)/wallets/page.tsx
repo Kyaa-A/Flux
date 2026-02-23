@@ -24,7 +24,7 @@ async function WalletSummary({
   const summary = await getWalletSummary();
   
   return (
-    <div className="grid gap-4 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       <Card className="bg-gradient-to-br from-indigo-500/10 to-purple-600/5 border-indigo-500/20">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -33,7 +33,7 @@ async function WalletSummary({
           <Wallet className="h-4 w-4 text-indigo-500" />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${
+          <div className={`text-lg sm:text-2xl font-bold ${
             summary.totalBalance >= 0 ? "text-emerald-500" : "text-rose-500"
           }`}>
             {formatCurrency(summary.totalBalance, currency, locale)}
@@ -52,7 +52,7 @@ async function WalletSummary({
           <TrendingUp className="h-4 w-4 text-emerald-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-emerald-500">
+          <div className="text-lg sm:text-2xl font-bold text-emerald-500">
             {formatCurrency(summary.totalAssets, currency, locale)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -69,7 +69,7 @@ async function WalletSummary({
           <TrendingDown className="h-4 w-4 text-rose-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-rose-500">
+          <div className="text-lg sm:text-2xl font-bold text-rose-500">
             {formatCurrency(summary.totalLiabilities, currency, locale)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -79,7 +79,7 @@ async function WalletSummary({
       </Card>
       
       <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
-        <CardContent className="flex flex-col items-center justify-center h-full py-6">
+        <CardContent className="flex flex-col items-center justify-center h-full py-4 sm:py-6">
           <WalletDialog
             trigger={
               <Button variant="ghost" className="h-full w-full flex flex-col gap-2">
@@ -98,7 +98,7 @@ async function WalletSummary({
 
 function SummarySkeleton() {
   return (
-    <div className="grid gap-4 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {[...Array(4)].map((_, i) => (
         <Card key={i} className="animate-pulse">
           <CardHeader className="pb-2">
@@ -139,7 +139,7 @@ async function WalletGrid() {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:gap-4 min-[520px]:grid-cols-2 lg:grid-cols-3">
       {wallets.map((wallet) => (
         <WalletCard key={wallet.id} wallet={wallet} allWallets={wallets} />
       ))}
@@ -149,7 +149,7 @@ async function WalletGrid() {
 
 function WalletGridSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:gap-4 min-[520px]:grid-cols-2 lg:grid-cols-3">
       {[...Array(3)].map((_, i) => (
         <Card key={i} className="animate-pulse">
           <CardHeader>
@@ -171,11 +171,11 @@ export default async function WalletsPage() {
   const locale = session?.user?.locale ?? "en-US";
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Wallets</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Wallets</h1>
           <p className="text-muted-foreground">
             Manage your accounts, cards, and cash
           </p>

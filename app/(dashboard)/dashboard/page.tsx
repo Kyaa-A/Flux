@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
       {[...Array(5)].map((_, i) => (
         <Card key={i} className="border-border">
           <CardHeader className="pb-2">
@@ -84,7 +84,7 @@ async function ChartsSection({
   ]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 sm:gap-6">
       <div className="lg:col-span-4">
         <MonthlyChart data={monthlyData} />
       </div>
@@ -125,7 +125,7 @@ async function TransactionsAndTopSpendingSection({
   ]);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
       <div className="xl:col-span-2">
         <RecentTransactions transactions={transactions} />
       </div>
@@ -150,7 +150,7 @@ export default async function DashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">
             Welcome back! Here&apos;s your financial overview.
           </p>
@@ -171,7 +171,7 @@ export default async function DashboardPage() {
       {/* Charts */}
       <Suspense
         fallback={
-          <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 sm:gap-6">
             <div className="lg:col-span-4">
               <ChartSkeleton />
             </div>
@@ -193,7 +193,7 @@ export default async function DashboardPage() {
       {/* Recent Transactions */}
       <Suspense
         fallback={
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
             <div className="xl:col-span-2">
               <ChartSkeleton />
             </div>

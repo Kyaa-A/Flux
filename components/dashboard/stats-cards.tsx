@@ -100,22 +100,22 @@ export function StatsCards({ stats }: StatsCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+    <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
       {cards.map((card) => (
         <Link key={card.title} href={card.href}>
-          <Card className="relative border-border hover:border-border/80 transition-colors overflow-hidden group cursor-pointer h-full py-4 sm:py-6">
+          <Card className="relative border-border hover:border-border/80 transition-colors overflow-hidden group cursor-pointer h-full">
             <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity bg-gradient-to-br ${card.gradient}`} />
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2">
+              <CardTitle className="text-[11px] sm:text-sm font-medium text-muted-foreground">
                 {card.title}
               </CardTitle>
-              <div className={`p-2 rounded-lg ${card.iconBg}`}>
-                <card.icon className={`w-4 h-4 ${card.iconColor}`} />
+              <div className={`p-1.5 sm:p-2 rounded-lg ${card.iconBg}`}>
+                <card.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${card.iconColor}`} />
               </div>
             </CardHeader>
             <CardContent>
               <div
-                className={`text-xl sm:text-2xl font-bold ${
+                className={`text-sm min-[420px]:text-base sm:text-2xl font-bold leading-tight ${
                   card.isSavings
                     ? card.savingsPositive
                       ? "text-emerald-600 dark:text-emerald-400"
@@ -150,7 +150,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
                   >
                     {formatPercentage(Math.abs(card.change))}
                   </span>
-                  <span className="text-xs text-muted-foreground">vs last month</span>
+                  <span className="hidden min-[420px]:inline text-xs text-muted-foreground">vs last month</span>
                 </div>
               )}
               {card.change === undefined && card.subtitle && (

@@ -83,7 +83,7 @@ export default async function AdminPage() {
               <Shield className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Admin Dashboard</h1>
               <p className="text-muted-foreground">
                 System overview and user management
               </p>

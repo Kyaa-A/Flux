@@ -196,7 +196,7 @@ export function WalletCard({ wallet, allWallets }: WalletCardProps) {
         </CardHeader>
         
         <CardContent>
-          <div className={`text-3xl font-bold ${
+          <div className={`text-xl sm:text-3xl font-bold ${
             wallet.balance >= 0 ? "text-emerald-500" : "text-rose-500"
           }`}>
             {formatAmount(wallet.balance)}

@@ -51,9 +51,9 @@ export function ExpenseDonut({ data }: ExpenseDonutProps) {
     return (
       <Card className="h-full">
         <CardHeader>
-          <CardTitle className="text-lg">Expenses by Category</CardTitle>
+          <CardTitle className="text-base sm:text-lg">Expenses by Category</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center h-[300px]">
+        <CardContent className="flex items-center justify-center h-[240px] sm:h-[300px]">
           <div className="text-center">
             <div className="text-muted-foreground mb-2">No expense data</div>
             <div className="text-sm text-muted-foreground/70">Add expenses to see breakdown</div>
@@ -66,10 +66,10 @@ export function ExpenseDonut({ data }: ExpenseDonutProps) {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-lg">Expenses by Category</CardTitle>
+        <CardTitle className="text-base sm:text-lg">Expenses by Category</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[200px] mb-4">
+        <div className="h-[180px] sm:h-[200px] mb-3 sm:mb-4">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -104,7 +104,7 @@ export function ExpenseDonut({ data }: ExpenseDonutProps) {
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: item.color }}
                   />
-                  <span className="text-muted-foreground truncate max-w-[120px]">
+                  <span className="text-muted-foreground truncate max-w-[96px] sm:max-w-[120px]">
                     {item.name}
                   </span>
                 </div>

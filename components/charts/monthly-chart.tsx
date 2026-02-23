@@ -63,10 +63,10 @@ export function MonthlyChart({ data }: MonthlyChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Income vs Expenses</CardTitle>
+        <CardTitle className="text-base sm:text-lg">Income vs Expenses</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px]">
+        <div className="h-[240px] sm:h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={data}
@@ -98,9 +98,9 @@ export function MonthlyChart({ data }: MonthlyChartProps) {
               <Tooltip content={<CustomTooltip currency={currency} locale={locale} />} />
               <Legend
                 iconType="circle"
-                wrapperStyle={{ paddingTop: "20px" }}
+                wrapperStyle={{ paddingTop: "12px" }}
                 formatter={(value) => (
-                  <span className="text-muted-foreground text-sm">{value}</span>
+                  <span className="text-muted-foreground text-xs sm:text-sm">{value}</span>
                 )}
               />
               <Area
