@@ -6,6 +6,7 @@ import {
   TrendingUp,
   TrendingDown,
   PiggyBank,
+  HandCoins,
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
@@ -19,6 +20,7 @@ interface StatsCardsProps {
     monthlyIncome: number;
     monthlyExpense: number;
     monthlySavings: number;
+    totalLoansOwed: number;
     incomeChange: number;
     expenseChange: number;
   };
@@ -70,10 +72,19 @@ export function StatsCards({ stats }: StatsCardsProps) {
       savingsPositive: stats.monthlySavings >= 0,
       href: "/analytics",
     },
+    {
+      title: "Money Owed To You",
+      value: formatAmount(stats.totalLoansOwed),
+      icon: HandCoins,
+      gradient: "from-amber-500 to-orange-600",
+      iconBg: "bg-amber-500/20",
+      iconColor: "text-amber-500",
+      href: "/loans",
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
       {cards.map((card) => (
         <Link key={card.title} href={card.href}>
           <Card className="relative border-border hover:border-border/80 transition-colors overflow-hidden group cursor-pointer h-full py-4 sm:py-6">

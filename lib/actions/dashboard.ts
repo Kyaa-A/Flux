@@ -24,7 +24,7 @@ export async function getDashboardStats() {
   );
 
   // Current month stats
-  const [currentIncome, currentExpense, prevIncome, prevExpense, totalBalance] =
+  const [currentIncome, currentExpense, prevIncome, prevExpense, totalBalance, totalLoansOwed] =
     await Promise.all([
       prisma.transaction.aggregate({
         where: {
@@ -62,6 +62,13 @@ export async function getDashboardStats() {
         where: { userId, isArchived: false },
         _sum: { balance: true },
       }),
+      prisma.loan.aggregate({
+        where: {
+          userId,
+          status: { in: ["OPEN", "PARTIAL", "OVERDUE"] },
+        },
+        _sum: { outstandingAmount: true },
+      }),
     ]);
 
   const income = Number(currentIncome._sum.amount) || 0;
@@ -69,12 +76,14 @@ export async function getDashboardStats() {
   const prevIncomeVal = Number(prevIncome._sum.amount) || 0;
   const prevExpenseVal = Number(prevExpense._sum.amount) || 0;
   const balance = Number(totalBalance._sum.balance) || 0;
+  const loansOwed = Number(totalLoansOwed._sum.outstandingAmount) || 0;
 
   return {
     totalBalance: balance,
     monthlyIncome: income,
     monthlyExpense: expense,
     monthlySavings: income - expense,
+    totalLoansOwed: loansOwed,
     incomeChange: calculatePercentageChange(income, prevIncomeVal),
     expenseChange: calculatePercentageChange(expense, prevExpenseVal),
   };
@@ -151,6 +160,57 @@ export async function getMonthlyChartData() {
   }
 
   return months;
+}
+
+// Net worth trend (last 6 months)
+export async function getNetWorthTrend() {
+  const userId = await getAuthUserId();
+  const now = new Date();
+  const monthStarts = Array.from({ length: 6 }, (_, idx) => {
+    return new Date(now.getFullYear(), now.getMonth() - (5 - idx), 1);
+  });
+
+  const oldestMonthStart = monthStarts[0];
+
+  const [transactions, walletTotal] = await Promise.all([
+    prisma.transaction.findMany({
+      where: {
+        userId,
+        date: { gte: oldestMonthStart },
+        type: { in: ["INCOME", "EXPENSE"] },
+      },
+      select: { date: true, amount: true, type: true },
+      orderBy: { date: "asc" },
+    }),
+    prisma.wallet.aggregate({
+      where: { userId, isArchived: false },
+      _sum: { balance: true },
+    }),
+  ]);
+
+  const monthlyNet = monthStarts.map((start) => {
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+    const monthTxns = transactions.filter((txn) => txn.date >= start && txn.date < end);
+    const income = monthTxns
+      .filter((txn) => txn.type === "INCOME")
+      .reduce((sum, txn) => sum + Number(txn.amount), 0);
+    const expense = monthTxns
+      .filter((txn) => txn.type === "EXPENSE")
+      .reduce((sum, txn) => sum + Number(txn.amount), 0);
+    return {
+      month: start.toLocaleDateString("en-US", { month: "short" }),
+      net: income - expense,
+    };
+  });
+
+  const currentBalance = Number(walletTotal._sum.balance) || 0;
+  const periodNet = monthlyNet.reduce((sum, row) => sum + row.net, 0);
+  let runningBalance = currentBalance - periodNet;
+
+  return monthlyNet.map((row) => {
+    runningBalance += row.net;
+    return { month: row.month, balance: runningBalance };
+  });
 }
 
 // Expense by Category (current month)

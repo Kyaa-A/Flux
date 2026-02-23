@@ -60,9 +60,12 @@ model User {
   wallets       Wallet[]
   categories    Category[]
   transactions  Transaction[]
+  loans         Loan[]
+  loanRepayments LoanRepayment[]
   budgets       Budget[]
   recurringTransactions RecurringTransaction[]
   notifications Notification[]
+  externalConnections ExternalConnection[]
 
   @@map("users")
 }
@@ -148,6 +151,7 @@ model Wallet {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
   recurringTransactions RecurringTransaction[]
+  externalConnections ExternalConnection[]
 
   @@index([userId])
   @@map("wallets")
@@ -217,6 +221,7 @@ model Transaction {
   
   categoryId  String
   category    Category        @relation(fields: [categoryId], references: [id])
+  externalImport ExternalProviderTransaction? @relation("ImportedTransaction")
 
   @@index([userId])
   @@index([walletId])
@@ -231,6 +236,56 @@ enum TransactionType {
   INCOME
   EXPENSE
   TRANSFER
+}
+
+enum LoanStatus {
+  OPEN
+  PARTIAL
+  OVERDUE
+  PAID
+}
+
+// Money owed to the user by a person/contact
+model Loan {
+  id                String     @id @default(cuid())
+  borrowerName      String
+  principalAmount   Decimal    @db.Decimal(12, 2)
+  outstandingAmount Decimal    @db.Decimal(12, 2)
+  borrowedAt        DateTime   @default(now())
+  dueDate           DateTime?
+  notes             String?
+  status            LoanStatus @default(OPEN)
+
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  userId            String
+  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repayments        LoanRepayment[]
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
+  @@map("loans")
+}
+
+// Payment history for each loan
+model LoanRepayment {
+  id        String   @id @default(cuid())
+  amount    Decimal  @db.Decimal(12, 2)
+  paidAt    DateTime @default(now())
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  loanId    String
+  loan      Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([loanId, paidAt])
+  @@index([userId, paidAt])
+  @@map("loan_repayments")
 }
 
 // =====================
@@ -306,6 +361,82 @@ enum RecurringFrequency {
   MONTHLY
   QUARTERLY
   YEARLY
+}
+
+// =====================
+// External Provider Sync
+// =====================
+
+enum ExternalProvider {
+  PAYPAL
+  GCASH
+  ATOME
+}
+
+enum ExternalConnectionStatus {
+  ACTIVE
+  DISCONNECTED
+  ERROR
+}
+
+enum ExternalSyncState {
+  NEVER
+  SUCCESS
+  ERROR
+}
+
+enum ExternalSyncMode {
+  POLLING
+  WEBHOOK
+  HYBRID
+}
+
+model ExternalConnection {
+  id            String                   @id @default(cuid())
+  provider      ExternalProvider
+  label         String
+  status        ExternalConnectionStatus @default(ACTIVE)
+  syncMode      ExternalSyncMode         @default(POLLING)
+  credentials   Json?
+  webhookSecret String?
+  lastSyncedAt  DateTime?
+  lastSyncState ExternalSyncState        @default(NEVER)
+  lastSyncError String?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+
+  userId        String
+  user          User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletId      String
+  wallet        Wallet                   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  providerTransactions ExternalProviderTransaction[]
+
+  @@index([userId, provider])
+  @@index([status, provider])
+  @@map("external_connections")
+}
+
+model ExternalProviderTransaction {
+  id                    String       @id @default(cuid())
+  providerTransactionId String
+  occurredAt            DateTime
+  description           String?
+  amount                Decimal      @db.Decimal(12, 2)
+  currency              String       @default("USD")
+  type                  TransactionType
+  raw                   Json?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  connectionId          String
+  connection            ExternalConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  importedTransactionId String?      @unique
+  importedTransaction   Transaction? @relation("ImportedTransaction", fields: [importedTransactionId], references: [id], onDelete: SetNull)
+
+  @@unique([connectionId, providerTransactionId])
+  @@index([connectionId, occurredAt])
+  @@map("external_provider_transactions")
 }
 
 // =====================

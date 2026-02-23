@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Shield,
   Bell,
+  HandCoins,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ import {
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ModeToggle } from "@/components/mode-toggle";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
+import { GlobalSearch } from "@/components/search/global-search";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -42,6 +44,7 @@ const navigation = [
   { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Categories", href: "/categories", icon: Tag },
   { name: "Wallets", href: "/wallets", icon: Wallet },
+  { name: "Loans", href: "/loans", icon: HandCoins },
   { name: "Budgets", href: "/budgets", icon: PiggyBank },
   { name: "Recurring", href: "/transactions/recurring", icon: Repeat },
   { name: "Analytics", href: "/analytics", icon: PieChart },
@@ -154,8 +157,7 @@ export default function DashboardLayout({
             <Menu className="w-5 h-5" />
           </Button>
 
-          {/* Search placeholder - can be expanded later */}
-          <div className="hidden lg:block" />
+          <GlobalSearch />
 
           {/* Right side */}
           <div className="flex items-center gap-3">

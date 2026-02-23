@@ -4,9 +4,11 @@ import {
   getRecentTransactions,
   getMonthlyChartData,
   getExpenseByCategory,
+  getNetWorthTrend,
   getCategories,
   getWallets,
 } from "@/lib/actions/dashboard";
+import { getUpcomingRecurringTransactions } from "@/lib/actions/recurring";
 import { getBudgetAlerts } from "@/lib/actions/budgets";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { MonthlyChart } from "@/components/charts/monthly-chart";
@@ -15,13 +17,15 @@ import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { TopCategories } from "@/components/dashboard/top-categories";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { BudgetAlerts } from "@/components/dashboard/budget-alerts";
+import { NetWorthTrend } from "@/components/dashboard/net-worth-trend";
+import { UpcomingRecurring } from "@/components/dashboard/upcoming-recurring";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {[...Array(4)].map((_, i) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      {[...Array(5)].map((_, i) => (
         <Card key={i} className="border-border">
           <CardHeader className="pb-2">
             <Skeleton className="h-4 w-24" />
@@ -60,21 +64,33 @@ async function BudgetAlertsSection() {
 }
 
 async function ChartsSection() {
-  const [monthlyData, expenseData] = await Promise.all([
+  const [monthlyData, expenseData, netWorthData] = await Promise.all([
     getMonthlyChartData(),
     getExpenseByCategory(),
+    getNetWorthTrend(),
   ]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2">
+    <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+      <div className="lg:col-span-4">
         <MonthlyChart data={monthlyData} />
       </div>
-      <div>
+      <div className="lg:col-span-2">
         <ExpenseDonut data={expenseData} />
+      </div>
+      <div className="lg:col-span-3">
+        <NetWorthTrend data={netWorthData} />
+      </div>
+      <div className="lg:col-span-3">
+        <UpcomingRecurringSection />
       </div>
     </div>
   );
+}
+
+async function UpcomingRecurringSection() {
+  const recurring = await getUpcomingRecurringTransactions(5);
+  return <UpcomingRecurring items={recurring} />;
 }
 
 async function TransactionsAndTopSpendingSection() {
@@ -127,11 +143,19 @@ export default async function DashboardPage() {
       {/* Charts */}
       <Suspense
         fallback={
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+            <div className="lg:col-span-4">
+              <ChartSkeleton />
+            </div>
             <div className="lg:col-span-2">
               <ChartSkeleton />
             </div>
-            <ChartSkeleton />
+            <div className="lg:col-span-3">
+              <ChartSkeleton />
+            </div>
+            <div className="lg:col-span-3">
+              <ChartSkeleton />
+            </div>
           </div>
         }
       >

@@ -136,6 +136,11 @@ export const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   currency: z.string().length(3).optional(),
   locale: z.string().min(2).max(10).optional(),
+  image: z
+    .string()
+    .max(2_000_000, "Avatar payload is too large")
+    .optional()
+    .nullable(),
 });
 
 export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;
@@ -166,6 +171,28 @@ export const recurringTransactionSchema = z.object({
 });
 
 export type RecurringTransactionFormData = z.infer<typeof recurringTransactionSchema>;
+
+// Loan validation
+export const loanSchema = z.object({
+  borrowerName: z.string().min(1, "Borrower name is required").max(100, "Name is too long"),
+  principalAmount: z.number().positive("Amount must be positive").max(999999999.99, "Amount is too large"),
+  borrowedAt: z.date(),
+  dueDate: z.date().optional().nullable(),
+  notes: z.string().max(500, "Notes are too long").optional().nullable(),
+}).refine((data) => !data.dueDate || data.dueDate >= data.borrowedAt, {
+  message: "Due date cannot be earlier than borrowed date",
+  path: ["dueDate"],
+});
+
+export type LoanFormData = z.infer<typeof loanSchema>;
+
+export const loanRepaymentSchema = z.object({
+  amount: z.number().positive("Repayment amount must be positive").max(999999999.99, "Amount is too large"),
+  paidAt: z.date(),
+  notes: z.string().max(500, "Notes are too long").optional().nullable(),
+});
+
+export type LoanRepaymentFormData = z.infer<typeof loanRepaymentSchema>;
 
 // Onboarding validation
 export const onboardingSchema = z.object({
