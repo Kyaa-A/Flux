@@ -32,7 +32,7 @@ declare module "next-auth" {
   }
 }
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(prisma),
   session: {
@@ -140,17 +140,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.currency = user.currency;
         token.locale = user.locale;
         token.onboardedAt = user.onboardedAt ?? null;
+        token.image = user.image ?? null;
+        token.name = user.name ?? null;
       }
       // Refresh user data when session is updated
       if (trigger === "update" && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { currency: true, locale: true, name: true, role: true, onboardedAt: true },
+          select: {
+            currency: true,
+            locale: true,
+            name: true,
+            image: true,
+            role: true,
+            onboardedAt: true,
+          },
         });
         if (dbUser) {
           token.currency = dbUser.currency;
           token.locale = dbUser.locale;
           token.name = dbUser.name;
+          token.image = dbUser.image;
           token.role = dbUser.role;
           token.onboardedAt = dbUser.onboardedAt ?? null;
         }

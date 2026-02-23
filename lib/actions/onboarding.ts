@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
+import { unstable_update } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/rbac";
 import { onboardingSchema } from "@/lib/validations";
@@ -60,6 +61,7 @@ export async function completeOnboarding(data: {
   const user = await requireAuth();
 
   const validated = onboardingSchema.parse(data);
+  const completedAt = new Date();
   const defaultWallet = await prisma.wallet.findFirst({
     where: { userId: user.id },
     orderBy: { createdAt: "asc" },
@@ -72,7 +74,7 @@ export async function completeOnboarding(data: {
       data: {
         currency: validated.currency,
         locale: validated.locale,
-        onboardedAt: new Date(),
+        onboardedAt: completedAt,
       },
     });
 
@@ -131,6 +133,20 @@ export async function completeOnboarding(data: {
       });
     }
   });
+
+  // Refresh JWT session payload so middleware immediately sees onboarding as completed.
+  // This avoids redirecting users back to /onboarding right after completion.
+  try {
+    await unstable_update({
+      user: {
+        currency: validated.currency,
+        locale: validated.locale,
+        onboardedAt: completedAt,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to refresh session after onboarding:", error);
+  }
 
   return { success: true };
 }
